@@ -1,25 +1,18 @@
-module github.com/temporalio/tctl
+module github.com/temporalio/tctl-core
 
 go 1.16
 
 require (
+	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.0
-	github.com/fatih/color v1.10.0
+	github.com/fatih/color v1.13.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/golang/mock v1.6.0
-	github.com/gorilla/websocket v1.4.2
-	github.com/hashicorp/go-hclog v0.16.1
-	github.com/hashicorp/go-plugin v1.4.1
 	github.com/hokaccha/go-prettyjson v0.0.0-20210113012101-fb4e108d2519
+	github.com/kr/text v0.2.0 // indirect
+	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/pborman/uuid v1.2.1
-	github.com/stretchr/testify v1.7.0
-	github.com/uber-go/tally v3.4.2+incompatible
-	github.com/urfave/cli v1.22.5
 	github.com/urfave/cli/v2 v2.3.0
-	go.temporal.io/api v1.5.0
-	go.temporal.io/sdk v1.10.0
-	go.temporal.io/server v1.12.1
-	google.golang.org/grpc v1.40.0
+	golang.org/x/sys v0.0.0-20211004093028-2c5d950f24ef // indirect
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )

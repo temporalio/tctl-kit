@@ -29,8 +29,8 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/temporalio/tctl/pkg/color"
-	"github.com/temporalio/tctl/pkg/process"
+	"github.com/temporalio/tctl-core/pkg/color"
+	"github.com/temporalio/tctl-core/pkg/process"
 )
 
 func PrintCards(c *cli.Context, items []interface{}, opts *PrintOptions) {

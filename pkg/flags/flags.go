@@ -28,9 +28,9 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/temporalio/tctl/pkg/format"
-	"github.com/temporalio/tctl/pkg/output"
-	"github.com/temporalio/tctl/pkg/pager"
+	"github.com/temporalio/tctl-core/pkg/format"
+	"github.com/temporalio/tctl-core/pkg/output"
+	"github.com/temporalio/tctl-core/pkg/pager"
 )
 
 var FlagsForPagination = []cli.Flag{

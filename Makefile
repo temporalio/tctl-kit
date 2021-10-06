@@ -1,6 +1,6 @@
 ############################# Main targets #############################
 # Install all tools, recompile proto files, run all possible checks and tests (long but comprehensive).
-all: clean build
+all: clean
 ########################################################################
 
 
@@ -14,15 +14,6 @@ GOARCH := $(shell go env GOARCH)
 endif
 
 COLOR := "\e[1;36m%s\e[0m\n"
-
-##### Build #####
-build:
-	@printf $(COLOR) "Build tctl with OS: $(GOOS), ARCH: $(GOARCH)..."
-	CGO_ENABLED=0 go build -o tctl cmd/main.go
-
-clean:
-	@printf $(COLOR) "Clearing binaries..."
-	@rm -f tctl
 
 ##### Test #####
 TEST_TIMEOUT := 20m
