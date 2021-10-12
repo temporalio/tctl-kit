@@ -22,23 +22,8 @@
 
 package config
 
-func (c *Config) GetAlias(alias string) (string, error) {
-	aliases, err := c.GetAliases()
-	if err != nil {
-		return "", err
-	}
-
-	if val, ok := aliases[alias]; ok {
-		return val, nil
-	}
-
-	return "", nil
-}
-
-func (c *Config) GetAliases() (map[string]string, error) {
-	if c.viper.IsSet(KeyAlias) {
-		return c.viper.GetStringMapString(KeyAlias), nil
-	}
-
-	return map[string]string{}, nil
-}
+const (
+	KeyActive      string = "active"
+	KeyAlias       string = "aliases"
+	KeyEnvironment string = "environments"
+)

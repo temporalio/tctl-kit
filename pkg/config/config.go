@@ -49,9 +49,9 @@ func NewConfig(appName, configName string) (*Config, error) {
 	v.AddConfigPath(dpath)
 	v.SetConfigName(configName)
 	v.SetConfigType("yaml")
-	v.SetDefault("aliases", map[string]string{})
-	v.SetDefault("active", "local")
-	v.SetDefault("environments", map[string]interface{}{"local": interface{}("")})
+	v.SetDefault(KeyAlias, map[string]string{})
+	v.SetDefault(KeyActive, "local")
+	v.SetDefault(KeyEnvironment, map[string]interface{}{"local": nil})
 
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
@@ -65,7 +65,7 @@ func NewConfig(appName, configName string) (*Config, error) {
 }
 
 func (c *Config) GetByEnvironment(ctx *cli.Context, key string) (string, error) {
-	activeEnv := c.viper.GetString("active")
+	activeEnv := c.viper.GetString(KeyActive)
 	fullKey := activeEnv + "." + key
 
 	if c.viper.IsSet(fullKey) {
@@ -76,12 +76,12 @@ func (c *Config) GetByEnvironment(ctx *cli.Context, key string) (string, error) 
 }
 
 func (c *Config) SetByEnvironment(ctx *cli.Context, key string, value string) error {
-	activeEnv := c.viper.GetString("active")
+	activeEnv := c.viper.GetString(KeyActive)
 	if activeEnv == "" {
 		return fmt.Errorf("active environment not set")
 	}
 
-	fullKey := activeEnv + "." + key
+	fullKey := KeyEnvironment + "." + activeEnv + "." + key
 	c.viper.Set(fullKey, value)
 
 	if err := c.viper.WriteConfig(); err != nil {
@@ -91,7 +91,7 @@ func (c *Config) SetByEnvironment(ctx *cli.Context, key string, value string) er
 	return nil
 }
 
-func (c *Config) GetGlobal(ctx *cli.Context, key string) (string, error) {
+func (c *Config) Get(ctx *cli.Context, key string) (string, error) {
 	if c.viper.IsSet(key) {
 		return c.viper.GetString(key), nil
 	}
@@ -99,7 +99,7 @@ func (c *Config) GetGlobal(ctx *cli.Context, key string) (string, error) {
 	return "", nil
 }
 
-func (c *Config) SetGlobal(ctx *cli.Context, key string, value string) error {
+func (c *Config) Set(ctx *cli.Context, key string, value string) error {
 	c.viper.Set(key, value)
 
 	if err := c.viper.WriteConfig(); err != nil {
