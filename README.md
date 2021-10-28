@@ -8,7 +8,7 @@ tctl-core contains a set of opinionated tooling for urfave/cli/v2 based CLIs
 * formatting output as Table/JSON/Card (`--output table/json/card`)
 * datetime formatting (`--time-format relative`)
 * color (`--color auto`)
-* configuration of CLI. Supports configuring multiple environments
+* .yml based configuration of CLI. Supports configuring multiple environments.
 * configuration of aliases for commands
 
 ### Usage
