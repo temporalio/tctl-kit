@@ -34,7 +34,7 @@ import (
 	"github.com/hokaccha/go-prettyjson"
 	"github.com/urfave/cli/v2"
 
-	"github.com/temporalio/tctl-core/pkg/color"
+	"github.com/temporalio/tctl-kit/pkg/color"
 )
 
 func PrintJSON(c *cli.Context, o interface{}, opts *PrintOptions) {
