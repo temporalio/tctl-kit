@@ -1,6 +1,6 @@
-# tctl-core 
+# tctl-kit 
 
-tctl-core contains a set of opinionated tooling for urfave/cli/v2 based CLIs
+tctl-kit contains a set of opinionated tooling for urfave/cli/v2 based CLIs
 
 ## Features:
 * pagination of data based on `less`, `more` and other pagers. Pager can be switched with $PAGER env variable.

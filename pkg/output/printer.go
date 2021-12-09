@@ -31,9 +31,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/temporalio/tctl-core/pkg/format"
-	"github.com/temporalio/tctl-core/pkg/iterator"
-	"github.com/temporalio/tctl-core/pkg/pager"
+	"github.com/temporalio/tctl-kit/pkg/format"
+	"github.com/temporalio/tctl-kit/pkg/iterator"
+	"github.com/temporalio/tctl-kit/pkg/pager"
 	"github.com/urfave/cli/v2"
 )
 

@@ -1,4 +1,4 @@
-module github.com/temporalio/tctl-core
+module github.com/temporalio/tctl-kit
 
 go 1.16
 
