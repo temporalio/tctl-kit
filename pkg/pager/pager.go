@@ -100,5 +100,5 @@ func pickPager(c *cli.Context, defaultPager string) (string, error) {
 		return string(More), nil
 	}
 
-	return "", errors.New("no pager available. Set $PAGER env variable or install 'less', 'more' or 'cat'")
+	return "", errors.New("no pager available. Set $PAGER env variable or install either 'less' or `more`")
 }

@@ -66,7 +66,7 @@ func NewConfig(appName, configName string) (*Config, error) {
 
 func (c *Config) GetByEnvironment(ctx *cli.Context, key string) (string, error) {
 	activeEnv := c.viper.GetString(KeyActive)
-	fullKey := activeEnv + "." + key
+	fullKey := getFullKey(activeEnv, key)
 
 	if c.viper.IsSet(fullKey) {
 		return c.viper.GetString(fullKey), nil
@@ -81,7 +81,7 @@ func (c *Config) SetByEnvironment(ctx *cli.Context, key string, value string) er
 		return fmt.Errorf("active environment not set")
 	}
 
-	fullKey := KeyEnvironment + "." + activeEnv + "." + key
+	fullKey := getFullKey(activeEnv, key)
 	c.viper.Set(fullKey, value)
 
 	if err := c.viper.WriteConfig(); err != nil {
@@ -89,6 +89,10 @@ func (c *Config) SetByEnvironment(ctx *cli.Context, key string, value string) er
 	}
 
 	return nil
+}
+
+func getFullKey(env, path string) string {
+	return KeyEnvironment + "." + env + "." + path
 }
 
 func (c *Config) Get(ctx *cli.Context, key string) (string, error) {
