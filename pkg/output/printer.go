@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	BatchPrintSize = 100 // for consistent formatting, print items in batches (ex. in Table output)
+	BatchPrintSize = 100
 )
 
 type PrintOptions struct {
@@ -121,10 +121,13 @@ func Pager(c *cli.Context, iter iterator.Iterator, opts *PrintOptions) error {
 		batch = append(batch, item)
 		itemsPrinted++
 
+		follow := c.Bool(FlagFollow)
 		isLastBatch := limit-itemsPrinted < BatchPrintSize
 		isBatchFilled := (len(batch) == BatchPrintSize) || (isLastBatch && len(batch) == limit%BatchPrintSize)
 
-		if isBatchFilled || !iter.HasNext() {
+		if follow || isBatchFilled || !iter.HasNext() {
+			// for consistent formatting, print items in batches (ex. in Table output)
+			// else if --follow is on, print items as they are received
 			PrintItems(c, batch, opts)
 			batch = batch[:0]
 			opts.NoHeader = true
