@@ -30,6 +30,7 @@ const (
 	FlagOutput = "output"
 	FlagFields = "fields"
 	FlagLimit  = "limit"
+	FlagFollow = "follow"
 
 	FieldsLong = "long"
 )
