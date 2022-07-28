@@ -51,7 +51,7 @@ func NewConfig(appName, configName string) (*Config, error) {
 	v.SetConfigType("yaml")
 	v.SetDefault(KeyAliases, map[string]string{})
 	v.SetDefault(KeyCurrentEnvironment, "local")
-	v.SetDefault(KeyEnvironment, map[string]interface{}{"local": nil})
+	v.SetDefault(KeyEnvironment, map[string]map[string]string{"local": nil})
 
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
