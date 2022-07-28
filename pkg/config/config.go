@@ -49,8 +49,8 @@ func NewConfig(appName, configName string) (*Config, error) {
 	v.AddConfigPath(dpath)
 	v.SetConfigName(configName)
 	v.SetConfigType("yaml")
-	v.SetDefault(KeyAlias, map[string]string{})
-	v.SetDefault(KeyActive, "local")
+	v.SetDefault(KeyAliases, map[string]string{})
+	v.SetDefault(KeyCurrentEnvironment, "local")
 	v.SetDefault(KeyEnvironment, map[string]interface{}{"local": nil})
 
 	if err := v.ReadInConfig(); err != nil {
@@ -72,9 +72,9 @@ func (c *Config) Get(ctx *cli.Context, key string) (string, error) {
 	return "", nil
 }
 
-func (c *Config) GetByEnvironment(ctx *cli.Context, key string) (string, error) {
-	activeEnv := c.viper.GetString(KeyActive)
-	fullKey := getFullKey(activeEnv, key)
+func (c *Config) GetByCurrentEnvironment(ctx *cli.Context, key string) (string, error) {
+	env := c.viper.GetString(KeyCurrentEnvironment)
+	fullKey := getFullKey(env, key)
 
 	if c.viper.IsSet(fullKey) {
 		return c.viper.GetString(fullKey), nil

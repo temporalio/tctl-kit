@@ -36,8 +36,8 @@ func (c *Config) GetAlias(alias string) (string, error) {
 }
 
 func (c *Config) GetAliases() (map[string]string, error) {
-	if c.viper.IsSet(KeyAlias) {
-		return c.viper.GetStringMapString(KeyAlias), nil
+	if c.viper.IsSet(KeyAliases) {
+		return c.viper.GetStringMapString(KeyAliases), nil
 	}
 
 	return map[string]string{}, nil
