@@ -64,40 +64,20 @@ func NewConfig(appName, configName string) (*Config, error) {
 	return &Config{viper: v}, nil
 }
 
+func (c *Config) Get(ctx *cli.Context, key string) (string, error) {
+	if c.viper.IsSet(key) {
+		return c.viper.GetString(key), nil
+	}
+
+	return "", nil
+}
+
 func (c *Config) GetByEnvironment(ctx *cli.Context, key string) (string, error) {
 	activeEnv := c.viper.GetString(KeyActive)
 	fullKey := getFullKey(activeEnv, key)
 
 	if c.viper.IsSet(fullKey) {
 		return c.viper.GetString(fullKey), nil
-	}
-
-	return "", nil
-}
-
-func (c *Config) SetByEnvironment(ctx *cli.Context, key string, value string) error {
-	activeEnv := c.viper.GetString(KeyActive)
-	if activeEnv == "" {
-		return fmt.Errorf("active environment not set")
-	}
-
-	fullKey := getFullKey(activeEnv, key)
-	c.viper.Set(fullKey, value)
-
-	if err := c.viper.WriteConfig(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func getFullKey(env, path string) string {
-	return KeyEnvironment + "." + env + "." + path
-}
-
-func (c *Config) Get(ctx *cli.Context, key string) (string, error) {
-	if c.viper.IsSet(key) {
-		return c.viper.GetString(key), nil
 	}
 
 	return "", nil
@@ -140,4 +120,8 @@ func mkdir(path string) error {
 	}
 
 	return nil
+}
+
+func getFullKey(env, path string) string {
+	return KeyEnvironment + "." + env + "." + path
 }
