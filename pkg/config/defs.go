@@ -23,7 +23,7 @@
 package config
 
 const (
-	KeyActive      string = "active"
-	KeyAlias       string = "aliases"
-	KeyEnvironment string = "environments"
+	KeyAliases            string = "aliases"
+	KeyCurrentEnvironment string = "current-env"
+	KeyEnvironment        string = "env"
 )
