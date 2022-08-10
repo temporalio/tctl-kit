@@ -133,11 +133,11 @@ func getFullKey(env, path string) string {
 }
 
 // validateKey validates the key against the following rules:
-// 1. key must start with a word character
+// 1. key must start with a letter
 // 2. key must contain only word characters, dashes or dots
-// 3. key must end with a word character
+// 3. key must end with a letter or number
 func validateKey(key string) error {
-	pattern := `^\w[\w\-\.]*\w$`
+	pattern := `^[a-z][\w\-\.]*[a-z0-9]$`
 
 	matched, err := regexp.MatchString(pattern, key)
 	if err != nil {
