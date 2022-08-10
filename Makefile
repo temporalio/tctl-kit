@@ -15,6 +15,11 @@ endif
 
 COLOR := "\e[1;36m%s\e[0m\n"
 
+define NEWLINE
+
+
+endef
+
 ##### Test #####
 TEST_TIMEOUT := 20m
 ALL_SRC         := $(shell find . -name "*.go")
