@@ -26,9 +26,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/spf13/viper"
-	"github.com/urfave/cli/v2"
 )
 
 type Config struct {
@@ -64,7 +64,12 @@ func NewConfig(appName, configName string) (*Config, error) {
 	return &Config{viper: v}, nil
 }
 
-func (c *Config) Get(ctx *cli.Context, key string) (string, error) {
+func (c *Config) Get(key string) (string, error) {
+	err := validateKey(key)
+	if err != nil {
+		return "", err
+	}
+
 	if c.viper.IsSet(key) {
 		return c.viper.GetString(key), nil
 	}
@@ -72,18 +77,19 @@ func (c *Config) Get(ctx *cli.Context, key string) (string, error) {
 	return "", nil
 }
 
-func (c *Config) GetByCurrentEnvironment(ctx *cli.Context, key string) (string, error) {
+func (c *Config) GetByCurrentEnvironment(key string) (string, error) {
 	env := c.viper.GetString(KeyCurrentEnvironment)
 	fullKey := getFullKey(env, key)
 
-	if c.viper.IsSet(fullKey) {
-		return c.viper.GetString(fullKey), nil
-	}
-
-	return "", nil
+	return c.Get(fullKey)
 }
 
-func (c *Config) Set(ctx *cli.Context, key string, value string) error {
+func (c *Config) Set(key string, value string) error {
+	err := validateKey(key)
+	if err != nil {
+		return err
+	}
+
 	c.viper.Set(key, value)
 
 	if err := c.viper.WriteConfig(); err != nil {
@@ -124,4 +130,23 @@ func mkdir(path string) error {
 
 func getFullKey(env, path string) string {
 	return KeyEnvironment + "." + env + "." + path
+}
+
+// validateKey validates the key against the following rules:
+// 1. key must start with a letter
+// 2. key must contain only word characters, dashes or dots
+// 3. key must end with a letter or number
+func validateKey(key string) error {
+	pattern := `^[a-z][\w\-\.]*[a-z0-9]$`
+
+	matched, err := regexp.MatchString(pattern, key)
+	if err != nil {
+		return err
+	}
+
+	if !matched {
+		return fmt.Errorf("invalid key: %v", key)
+	}
+
+	return nil
 }
