@@ -77,6 +77,15 @@ func (c *Config) Get(key string) (string, error) {
 	return "", nil
 }
 
+func (c *Config) GetEnv(name string) (map[string]string, error) {
+	err := validateKey(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.viper.GetStringMapString(KeyEnvironment + "." + name), nil
+}
+
 func (c *Config) GetByCurrentEnvironment(key string) (string, error) {
 	env := c.viper.GetString(KeyCurrentEnvironment)
 	fullKey := getFullKey(env, key)

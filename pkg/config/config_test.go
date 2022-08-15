@@ -66,17 +66,17 @@ func TestConfigDefaults(t *testing.T) {
 
 func TestConfigSetKey(t *testing.T) {
 	tests := map[string]struct {
-		keyvalues map[string]string
-		err       bool
+		input map[string]string
+		err   bool
 	}{
 		"throw on empty key": {
-			keyvalues: map[string]string{
+			input: map[string]string{
 				"": "value",
 			},
 			err: true,
 		},
 		"throw on invalid key": {
-			keyvalues: map[string]string{
+			input: map[string]string{
 				"1key": "value",
 				"-key": "value",
 				"key!": "value",
@@ -84,13 +84,13 @@ func TestConfigSetKey(t *testing.T) {
 			err: true,
 		},
 		"accepts empty value": {
-			keyvalues: map[string]string{
+			input: map[string]string{
 				"key": "",
 			},
 			err: false,
 		},
 		"valid key and value": {
-			keyvalues: map[string]string{
+			input: map[string]string{
 				"valid-key":                  "value 1",
 				"valid-key2":                 "value 2",
 				"valid-key3.xxx-yyy_zzz.ooo": "value 3",
@@ -98,7 +98,7 @@ func TestConfigSetKey(t *testing.T) {
 			err: false,
 		},
 		"merge keys": {
-			keyvalues: map[string]string{
+			input: map[string]string{
 				"env.local.key1":  "value-local-1",
 				"env.local.key2":  "value-local-2",
 				"env.remote.key1": "value-remote-1",
@@ -112,7 +112,7 @@ func TestConfigSetKey(t *testing.T) {
 			cfg := createConfig(t)
 			defer removeConfig(t)
 
-			for key, value := range tc.keyvalues {
+			for key, value := range tc.input {
 				err := cfg.Set(key, value)
 				if tc.err {
 					assert.Error(t, err)
@@ -122,10 +122,55 @@ func TestConfigSetKey(t *testing.T) {
 			}
 
 			if !tc.err {
-				for key, value := range tc.keyvalues {
+				for key, value := range tc.input {
 					v, err := cfg.Get(key)
 					assert.NoError(t, err)
 					assert.Equal(t, v, value)
+				}
+			}
+		})
+	}
+}
+
+func TestConfigGetEnv(t *testing.T) {
+	tests := map[string]struct {
+		input  map[string]string
+		expect map[string]map[string]string
+	}{
+		"reads env by name": {
+			input: map[string]string{
+				"env.local.key1":  "value-local-1",
+				"env.local.key2":  "value-local-2",
+				"env.remote.key1": "value-remote-1",
+			},
+			expect: map[string]map[string]string{
+				"local": {
+					"key1": "value-local-1",
+					"key2": "value-local-2",
+				},
+				"remote": {
+					"key1": "value-remote-1",
+				},
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			cfg := createConfig(t)
+			defer removeConfig(t)
+
+			for key, value := range tc.input {
+				err := cfg.Set(key, value)
+				assert.NoError(t, err)
+			}
+
+			for envName, envProps := range tc.expect {
+				envActual, err := cfg.GetEnv(envName)
+				for key, vExpected := range envProps {
+					assert.NoError(t, err)
+					vActual := envActual[key]
+					assert.Equal(t, vActual, vExpected)
 				}
 			}
 		})
