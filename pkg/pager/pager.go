@@ -39,13 +39,8 @@ const (
 	DefaultListPageSize = 20
 )
 
-func NewPager(c *cli.Context, defaultPager string) (io.Writer, func()) {
-	noPager := c.Bool(FlagNoPager)
-	if noPager {
-		return os.Stdout, func() {}
-	}
-
-	pager, err := pickPager(c, defaultPager)
+func NewPager(c *cli.Context, suggestedPager string) (io.Writer, func()) {
+	pager, err := pickPager(c, suggestedPager)
 	if err != nil {
 		return os.Stdout, func() {}
 	}

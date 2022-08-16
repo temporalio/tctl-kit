@@ -27,6 +27,7 @@ package output
 import (
 	"fmt"
 	"io"
+	"os"
 	"reflect"
 	"strings"
 	"time"
@@ -53,14 +54,12 @@ type PrintOptions struct {
 }
 
 func PrintItems(c *cli.Context, items []interface{}, opts *PrintOptions) {
-	outputFlag := c.String(FlagOutput)
 	fields := c.String(FlagFields)
 
-	if opts.Pager == nil {
-		pager, close := newPagerWithDefault(c)
-		opts.Pager = pager
-		defer close()
-	}
+	output := getOutputFormat(c, opts)
+	pager, close := newPager(c, opts)
+	opts.Pager = pager
+	defer close()
 
 	if !opts.IgnoreFlags && c.IsSet(FlagFields) {
 		if fields == FieldsLong {
@@ -74,13 +73,6 @@ func PrintItems(c *cli.Context, items []interface{}, opts *PrintOptions) {
 			opts.Fields = f
 			opts.FieldsLong = []string{}
 		}
-	}
-
-	output := Table
-	if !opts.IgnoreFlags && c.IsSet(FlagOutput) {
-		output = OutputOption(outputFlag)
-	} else if opts.Output != "" {
-		output = opts.Output
 	}
 
 	switch output {
@@ -98,13 +90,9 @@ func PrintItems(c *cli.Context, items []interface{}, opts *PrintOptions) {
 func Pager(c *cli.Context, iter iterator.Iterator, opts *PrintOptions) error {
 	limit := c.Int(FlagLimit)
 
-	pager, close := newPagerWithDefault(c)
-	defer close()
-
 	if opts == nil {
 		opts = &PrintOptions{}
 	}
-	opts.Pager = pager
 
 	itemsPrinted := 0
 	var batch []interface{}
@@ -137,17 +125,45 @@ func Pager(c *cli.Context, iter iterator.Iterator, opts *PrintOptions) error {
 	return nil
 }
 
-func newPagerWithDefault(c *cli.Context) (io.Writer, func()) {
+func newPager(c *cli.Context, opts *PrintOptions) (io.Writer, func()) {
+	output := getOutputFormat(c, opts)
+	suggestedPager := suggestPagerByOutputFormat(c, output)
+
+	if opts.NoPager || c.Bool(pager.FlagNoPager) {
+		return os.Stdout, func() {}
+	}
+
+	return pager.NewPager(c, suggestedPager)
+}
+
+func getOutputFormat(c *cli.Context, opts *PrintOptions) OutputOption {
 	outputFlag := c.String(FlagOutput)
 	output := OutputOption(outputFlag)
 
-	var defaultPager string
-	if output == Table {
-		defaultPager = string(pager.Less)
-	} else {
-		defaultPager = string(pager.More)
+	if opts != nil {
+		if !opts.IgnoreFlags && c.IsSet(FlagOutput) {
+			return output
+		} else if opts.Output != "" {
+			return opts.Output
+		}
 	}
-	return pager.NewPager(c, defaultPager)
+
+	return Table
+}
+
+func suggestPagerByOutputFormat(c *cli.Context, oo OutputOption) string {
+	switch oo {
+	case "":
+		return string(pager.Stdout)
+	case Table:
+		return string(pager.Less)
+	case Card:
+		return string(pager.Less)
+	case JSON:
+		return string(pager.More)
+	default:
+		return string(pager.Stdout)
+	}
 }
 
 func formatField(c *cli.Context, i interface{}) string {
