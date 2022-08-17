@@ -39,10 +39,6 @@ func PrintCards(c *cli.Context, items []interface{}, opts *PrintOptions) {
 		process.ErrorAndExit("unable to print card", err)
 	}
 
-	pager, close := newPager(c, opts)
-	opts.Pager = pager
-	defer close()
-
 	fieldNames := make([]string, len(opts.Fields))
 	for i, field := range opts.Fields {
 		nestedFields := splitFieldPath(field)

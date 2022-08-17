@@ -53,6 +53,8 @@ type PrintOptions struct {
 	Separator   string
 }
 
+// PrintItems prints items based on user flags or print options.
+// User flags are prioritized unless IgnoreFlags is set
 func PrintItems(c *cli.Context, items []interface{}, opts *PrintOptions) {
 	fields := c.String(FlagFields)
 
@@ -125,13 +127,15 @@ func Pager(c *cli.Context, iter iterator.Iterator, opts *PrintOptions) error {
 	return nil
 }
 
+// newPager creates a new pager based on user flags or print options
+// User flags are prioritized unless IgnoreFlags is set
 func newPager(c *cli.Context, opts *PrintOptions) (io.Writer, func()) {
-	output := getOutputFormat(c, opts)
-	suggestedPager := suggestPagerByOutputFormat(c, output)
-
 	if opts.NoPager || c.Bool(pager.FlagNoPager) {
 		return os.Stdout, func() {}
 	}
+
+	output := getOutputFormat(c, opts)
+	suggestedPager := suggestPagerByOutputFormat(c, output)
 
 	return pager.NewPager(c, suggestedPager)
 }
@@ -151,6 +155,9 @@ func getOutputFormat(c *cli.Context, opts *PrintOptions) OutputOption {
 	return Table
 }
 
+// suggestPagerByOutputFormat returns the suggested pager by output format
+// For Table and Card views suggests 'less' as the pager
+// For JSON, as it tends to be larger, suggests 'more' as the pager
 func suggestPagerByOutputFormat(c *cli.Context, oo OutputOption) string {
 	switch oo {
 	case "":
