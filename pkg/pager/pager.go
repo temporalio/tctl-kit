@@ -39,6 +39,9 @@ const (
 	DefaultListPageSize = 20
 )
 
+// NewPager returns a writer such as stdout, "less", "more" or a pager provided by the user.
+// A user can provide the pager name with a pager flag or env variable.
+// If no pager is provided, it will fall back to the suggested pager.
 func NewPager(c *cli.Context, suggestedPager string) (io.Writer, func()) {
 	pager, err := pickPager(c, suggestedPager)
 	if err != nil {
