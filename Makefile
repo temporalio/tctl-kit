@@ -10,4 +10,4 @@ COLOR := "\e[1;36m%s\e[0m\n"
 ##### Test #####
 test:
 	@printf $(COLOR) "Running unit tests..."
-	go test ./...
+	go test ./... -race
