@@ -32,7 +32,7 @@ const (
 type PagerOption string
 
 const (
-	Cat  PagerOption = "cat"
-	Less PagerOption = "less"
-	More PagerOption = "more"
+	Stdout PagerOption = ""
+	Less   PagerOption = "less"
+	More   PagerOption = "more"
 )
