@@ -24,6 +24,7 @@ package config
 
 import (
 	"errors"
+	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -40,10 +41,10 @@ func TestNewConfigCreatesFile(t *testing.T) {
 	path := getConfigPath(t)
 
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		assert.Error(t, err) // config file shouldn't exist yet
+		assert.Error(t, err)
 	}
 
-	createConfig(t)
+	initConfig(t)
 
 	_, err := os.Stat(path)
 	assert.NoError(t, err)
@@ -51,12 +52,12 @@ func TestNewConfigCreatesFile(t *testing.T) {
 	removeConfig(t)
 
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		assert.Error(t, err) // config file shouldn't exist
+		assert.Error(t, err)
 	}
 }
 
 func TestConfigDefaults(t *testing.T) {
-	cfg := createConfig(t)
+	cfg := initConfig(t)
 	defer removeConfig(t)
 
 	env, err := cfg.Get(KeyCurrentEnvironment)
@@ -66,8 +67,9 @@ func TestConfigDefaults(t *testing.T) {
 
 func TestConfigSetKey(t *testing.T) {
 	tests := map[string]struct {
-		input map[string]string
-		err   bool
+		input    map[string]string
+		expected string
+		err      bool
 	}{
 		"throw on empty key": {
 			input: map[string]string{
@@ -87,7 +89,8 @@ func TestConfigSetKey(t *testing.T) {
 			input: map[string]string{
 				"key": "",
 			},
-			err: false,
+			expected: "env:\n  local: {}\nkey: \"\"\n",
+			err:      false,
 		},
 		"valid key and value": {
 			input: map[string]string{
@@ -95,6 +98,12 @@ func TestConfigSetKey(t *testing.T) {
 				"valid-key2":                 "value 2",
 				"valid-key3.xxx-yyy_zzz.ooo": "value 3",
 			},
+			expected: `valid-key: value 1
+valid-key2: value 2
+valid-key3:
+  xxx-yyy_zzz:
+    ooo: value 3
+`,
 			err: false,
 		},
 		"merge keys": {
@@ -103,13 +112,18 @@ func TestConfigSetKey(t *testing.T) {
 				"env.local.key2":  "value-local-2",
 				"env.remote.key1": "value-remote-1",
 			},
+			expected: `  local:
+    key1: value-local-1
+    key2: value-local-2
+  remote:
+    key1: value-remote-1`,
 			err: false,
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			cfg := createConfig(t)
+			cfg := initConfig(t)
 			defer removeConfig(t)
 
 			for key, value := range tc.input {
@@ -122,11 +136,7 @@ func TestConfigSetKey(t *testing.T) {
 			}
 
 			if !tc.err {
-				for key, value := range tc.input {
-					v, err := cfg.Get(key)
-					assert.NoError(t, err)
-					assert.Equal(t, v, value)
-				}
+				assert.Contains(t, readConfig(t), tc.expected)
 			}
 		})
 	}
@@ -134,15 +144,16 @@ func TestConfigSetKey(t *testing.T) {
 
 func TestConfigGetEnv(t *testing.T) {
 	tests := map[string]struct {
-		input  map[string]string
+		input  string
 		expect map[string]map[string]string
 	}{
 		"reads env by name": {
-			input: map[string]string{
-				"env.local.key1":  "value-local-1",
-				"env.local.key2":  "value-local-2",
-				"env.remote.key1": "value-remote-1",
-			},
+			input: `env:
+  local:
+    key1: value-local-1
+    key2: value-local-2
+  remote:
+    key1: value-remote-1`,
 			expect: map[string]map[string]string{
 				"local": {
 					"key1": "value-local-1",
@@ -157,18 +168,14 @@ func TestConfigGetEnv(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			cfg := createConfig(t)
+			writeConfig(t, tc.input)
+			cfg := initConfig(t)
 			defer removeConfig(t)
-
-			for key, value := range tc.input {
-				err := cfg.Set(key, value)
-				assert.NoError(t, err)
-			}
 
 			for envName, envProps := range tc.expect {
 				envActual, err := cfg.GetEnv(envName)
+				assert.NoError(t, err)
 				for key, vExpected := range envProps {
-					assert.NoError(t, err)
 					vActual := envActual[key]
 					assert.Equal(t, vActual, vExpected)
 				}
@@ -177,18 +184,28 @@ func TestConfigGetEnv(t *testing.T) {
 	}
 }
 
-func createConfig(t *testing.T) *Config {
+func initConfig(t *testing.T) *Config {
 	cfg, err := NewConfig(appName, cfgFile)
 	assert.NoError(t, err)
 
 	return cfg
 }
 
-func removeConfig(t *testing.T) {
+func readConfig(t *testing.T) string {
 	path := getConfigPath(t)
+	content, err := os.ReadFile(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return string(content)
+}
 
-	err := os.Remove(path)
-	assert.NoError(t, err)
+func writeConfig(t *testing.T, content string) {
+	path := getConfigPath(t)
+	err := os.WriteFile(path, []byte(content), 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func getConfigPath(t *testing.T) string {
@@ -198,4 +215,11 @@ func getConfigPath(t *testing.T) string {
 	path := filepath.Join(dpath, ".config", appName, cfgFile+".yaml")
 
 	return path
+}
+
+func removeConfig(t *testing.T) {
+	path := getConfigPath(t)
+
+	err := os.Remove(path)
+	assert.NoError(t, err)
 }
