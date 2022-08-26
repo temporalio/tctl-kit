@@ -26,14 +26,14 @@ package output
 
 import (
 	"fmt"
-
-	"github.com/urfave/cli/v2"
+	"io"
 
 	"github.com/temporalio/tctl-kit/pkg/color"
 	"github.com/temporalio/tctl-kit/pkg/process"
+	"github.com/urfave/cli/v2"
 )
 
-func PrintCards(c *cli.Context, items []interface{}, opts *PrintOptions) {
+func PrintCards(c *cli.Context, w io.Writer, items []interface{}, opts *PrintOptions) {
 	rows, err := extractFieldValues(items, opts.Fields)
 	if err != nil {
 		process.ErrorAndExit("unable to print card", err)
@@ -45,7 +45,6 @@ func PrintCards(c *cli.Context, items []interface{}, opts *PrintOptions) {
 		fieldNames[i] = nestedFields[len(nestedFields)-1]
 	}
 
-	w := opts.Pager
 	for _, row := range rows {
 		fmt.Fprintf(w, "---------------------------------------------------\n")
 		for j, col := range row {

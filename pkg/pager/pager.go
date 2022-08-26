@@ -41,14 +41,18 @@ const (
 
 // NewPager returns a writer such as stdout, "less", "more" or a pager provided by the user.
 // A user can provide the pager name with a pager flag or env variable.
-// If no pager is provided, it will fall back to the suggested pager.
-func NewPager(c *cli.Context, suggestedPager string) (io.Writer, func()) {
-	pager, err := pickPager(c, suggestedPager)
+// If no pager is provided, it will fall back to stdout.
+func NewPager(c *cli.Context, pager string) (io.Writer, func()) {
+	noPager := c.Bool(FlagNoPager)
+	if noPager || pager == "" || pager == string(Stdout) {
+		return os.Stdout, func() {}
+	}
+
+	exe, err := lookupPager(pager)
 	if err != nil {
 		return os.Stdout, func() {}
 	}
 
-	exe, _ := exec.LookPath(pager)
 	cmd := exec.Command(exe)
 
 	if pager == string(Less) {
@@ -78,25 +82,14 @@ func NewPager(c *cli.Context, suggestedPager string) (io.Writer, func()) {
 	}
 }
 
-func pickPager(c *cli.Context, defaultPager string) (string, error) {
-	pagerFlag := c.String("pager")
-	if pagerFlag == "" {
-		pagerFlag = defaultPager
+func lookupPager(pagerName string) (string, error) {
+	if pagerName == "" {
+		return "", errors.New("no pager provided")
 	}
 
-	if pagerFlag != "" {
-		if _, err := exec.LookPath(pagerFlag); err == nil {
-			return pagerFlag, nil
-		}
+	if path, err := exec.LookPath(pagerName); err == nil {
+		return path, nil
 	}
 
-	if _, err := exec.LookPath(string(Less)); err == nil {
-		return string(Less), nil
-	}
-
-	if _, err := exec.LookPath(string(More)); err == nil {
-		return string(More), nil
-	}
-
-	return "", errors.New("no pager available. Set $PAGER env variable or install either 'less' or `more`")
+	return pagerName, errors.New("unable to find pager " + pagerName)
 }

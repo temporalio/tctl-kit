@@ -28,24 +28,24 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/proto"
 	"github.com/hokaccha/go-prettyjson"
-	"github.com/urfave/cli/v2"
-
 	"github.com/temporalio/tctl-kit/pkg/color"
+	"github.com/urfave/cli/v2"
 )
 
-func PrintJSON(c *cli.Context, o interface{}, opts *PrintOptions) {
+func PrintJSON(c *cli.Context, w io.Writer, o interface{}) {
 	json, err := ParseToJSON(c, o, true)
 
 	if err != nil {
 		fmt.Printf("Error when try to print pretty: %v\n", err)
-		fmt.Fprintln(opts.Pager, o)
+		fmt.Fprintln(w, o)
 	}
 
-	fmt.Fprintln(opts.Pager, json)
+	fmt.Fprintln(w, json)
 }
 
 func ParseToJSON(c *cli.Context, o interface{}, indent bool) (string, error) {

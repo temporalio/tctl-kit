@@ -25,22 +25,23 @@
 package output
 
 import (
-	"github.com/olekukonko/tablewriter"
-	"github.com/urfave/cli/v2"
+	"io"
 
+	"github.com/olekukonko/tablewriter"
 	"github.com/temporalio/tctl-kit/pkg/color"
 	"github.com/temporalio/tctl-kit/pkg/process"
+	"github.com/urfave/cli/v2"
 )
 
 var (
 	headerColor = tablewriter.Colors{tablewriter.FgHiMagentaColor}
 )
 
-func PrintTable(c *cli.Context, items []interface{}, opts *PrintOptions) {
+func PrintTable(c *cli.Context, w io.Writer, items []interface{}, opts *PrintOptions) {
 	colorFlag := c.String(color.FlagColor)
 	enableColor := colorFlag == string(color.Auto) || colorFlag == string(color.Always)
 	fields := opts.Fields
-	table := tablewriter.NewWriter(opts.Pager)
+	table := tablewriter.NewWriter(w)
 	table.SetBorder(false)
 	table.SetColumnSeparator(opts.Separator)
 

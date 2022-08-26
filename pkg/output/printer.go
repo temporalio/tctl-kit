@@ -26,8 +26,6 @@ package output
 
 import (
 	"fmt"
-	"io"
-	"os"
 	"reflect"
 	"strings"
 	"time"
@@ -43,27 +41,35 @@ const (
 )
 
 type PrintOptions struct {
-	Fields      []string
-	FieldsLong  []string
-	IgnoreFlags bool
-	Output      OutputOption
-	Pager       io.Writer
-	NoPager     bool
-	NoHeader    bool
-	Separator   string
+	// Fields is a list of fields to print
+	Fields []string
+	// FieldsLong is a list of additional fields to print with "--fields long" flag
+	FieldsLong []string
+	// ForceFields ignores user provided fields and uses print options instead. Useful when printing secondary data
+	ForceFields bool
+	// Output is the output format to use: table, json..
+	Output OutputOption
+	// Pager is the pager to use for interactive mode. Default - stdout
+	Pager pager.PagerOption
+	// NoHeader removes the header in the table output
+	NoHeader bool
+	// Separator to use in table output
+	Separator string
 }
 
 // PrintItems prints items based on user flags or print options.
-// User flags are prioritized unless IgnoreFlags is set
 func PrintItems(c *cli.Context, items []interface{}, opts *PrintOptions) {
 	fields := c.String(FlagFields)
 
-	output := getOutputFormat(c, opts)
-	pager, close := newPager(c, opts)
-	opts.Pager = pager
+	pagerName := c.String(pager.FlagPager)
+	if pagerName == "" {
+		pagerName = string(opts.Pager)
+	}
+
+	writer, close := pager.NewPager(c, pagerName)
 	defer close()
 
-	if !opts.IgnoreFlags && c.IsSet(FlagFields) {
+	if !opts.ForceFields && c.IsSet(FlagFields) {
 		if fields == FieldsLong {
 			opts.Fields = append(opts.Fields, opts.FieldsLong...)
 			opts.FieldsLong = []string{}
@@ -77,19 +83,20 @@ func PrintItems(c *cli.Context, items []interface{}, opts *PrintOptions) {
 		}
 	}
 
+	output := getOutputFormat(c, opts)
 	switch output {
 	case Table:
-		PrintTable(c, items, opts)
+		PrintTable(c, writer, items, opts)
 	case JSON:
-		PrintJSON(c, items, opts)
+		PrintJSON(c, writer, items)
 	case Card:
-		PrintCards(c, items, opts)
+		PrintCards(c, writer, items, opts)
 	default:
 	}
 }
 
-// Pager creates an interactive CLI mode to control the printing of items
-func Pager(c *cli.Context, iter iterator.Iterator, opts *PrintOptions) error {
+// PrintIterator prints items from an iterator based on user flags or print options.
+func PrintIterator(c *cli.Context, iter iterator.Iterator, opts *PrintOptions) error {
 	limit := c.Int(FlagLimit)
 
 	if opts == nil {
@@ -127,25 +134,12 @@ func Pager(c *cli.Context, iter iterator.Iterator, opts *PrintOptions) error {
 	return nil
 }
 
-// newPager creates a new pager based on user flags or print options
-// User flags are prioritized unless IgnoreFlags is set
-func newPager(c *cli.Context, opts *PrintOptions) (io.Writer, func()) {
-	if opts.NoPager || c.Bool(pager.FlagNoPager) {
-		return os.Stdout, func() {}
-	}
-
-	output := getOutputFormat(c, opts)
-	suggestedPager := suggestPagerByOutputFormat(c, output)
-
-	return pager.NewPager(c, suggestedPager)
-}
-
 func getOutputFormat(c *cli.Context, opts *PrintOptions) OutputOption {
 	outputFlag := c.String(FlagOutput)
 	output := OutputOption(outputFlag)
 
 	if opts != nil {
-		if !opts.IgnoreFlags && c.IsSet(FlagOutput) {
+		if c.IsSet(FlagOutput) {
 			return output
 		} else if opts.Output != "" {
 			return opts.Output
@@ -153,24 +147,6 @@ func getOutputFormat(c *cli.Context, opts *PrintOptions) OutputOption {
 	}
 
 	return Table
-}
-
-// suggestPagerByOutputFormat returns the suggested pager by output format
-// For Table and Card views suggests 'less' as the pager
-// For JSON, as it tends to be larger, suggests 'more' as the pager
-func suggestPagerByOutputFormat(c *cli.Context, oo OutputOption) string {
-	switch oo {
-	case "":
-		return string(pager.Stdout)
-	case Table:
-		return string(pager.Less)
-	case Card:
-		return string(pager.Less)
-	case JSON:
-		return string(pager.More)
-	default:
-		return string(pager.Stdout)
-	}
 }
 
 func formatField(c *cli.Context, i interface{}) string {
