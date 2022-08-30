@@ -22,67 +22,53 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package output
+package pager_test
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io"
+	"flag"
+	"os"
+	"testing"
 
-	"github.com/gogo/protobuf/jsonpb"
-	"github.com/gogo/protobuf/proto"
-	"github.com/hokaccha/go-prettyjson"
-	"github.com/temporalio/tctl-kit/pkg/color"
+	"github.com/stretchr/testify/assert"
+	"github.com/temporalio/tctl-kit/pkg/pager"
 	"github.com/urfave/cli/v2"
 )
 
-func PrintJSON(c *cli.Context, w io.Writer, o interface{}) {
-	json, err := ParseToJSON(c, o, true)
+func setupPagerTest() (*cli.Context, func()) {
+	app := cli.NewApp()
+	flagSet := flag.FlagSet{}
+	ctx := cli.NewContext(app, &flagSet, nil)
 
-	if err != nil {
-		fmt.Printf("Error when try to print pretty: %v\n", err)
-		fmt.Fprintln(w, o)
-	}
-
-	fmt.Fprintln(w, json)
+	return ctx, func() {}
 }
 
-func ParseToJSON(c *cli.Context, o interface{}, indent bool) (string, error) {
-	colorFlag := c.String(color.FlagColor)
-	enableColor := colorFlag == string(color.Auto) || colorFlag == string(color.Always)
-	var b []byte
-	var err error
+func TestPrintTable_Stdout(t *testing.T) {
+	ctx, teardown := setupPagerTest()
+	defer teardown()
 
-	if enableColor {
-		encoder := prettyjson.NewFormatter()
-		if !indent {
-			encoder.Indent = 0
-			encoder.Newline = ""
-		}
-		b, err = encoder.Marshal(o)
-	} else {
-		if pb, ok := o.(proto.Message); ok {
-			encoder := jsonpb.Marshaler{}
-			if indent {
-				encoder.Indent = "  "
-			}
+	w, _ := pager.NewPager(ctx, "")
+	assert.Equal(t, w, os.Stdout)
 
-			var buf bytes.Buffer
-			err = encoder.Marshal(&buf, pb)
-			b = buf.Bytes()
-		} else {
-			if indent {
-				b, err = json.MarshalIndent(o, "", "  ")
-			} else {
-				b, err = json.Marshal(o)
-			}
-		}
-	}
+	w, _ = pager.NewPager(ctx, "stdout")
+	assert.Equal(t, w, os.Stdout)
+}
 
-	if err != nil {
-		return "", err
-	}
+func TestPrintTable_StdoutFallback(t *testing.T) {
+	ctx, teardown := setupPagerTest()
+	defer teardown()
 
-	return string(b), nil
+	w, close := pager.NewPager(ctx, "executable-that-doesnt-exist")
+	defer close()
+
+	assert.Equal(t, w, os.Stdout)
+}
+
+func TestPrintTable_Less(t *testing.T) {
+	ctx, teardown := setupPagerTest()
+	defer teardown()
+
+	w, close := pager.NewPager(ctx, "less")
+	defer close()
+
+	assert.NotEqual(t, w, os.Stdout)
 }

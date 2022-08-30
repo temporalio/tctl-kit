@@ -22,74 +22,63 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package pager
+package output_test
 
 import (
-	"errors"
-	"io"
+	"flag"
 	"os"
-	"os/exec"
-	"os/signal"
-	"syscall"
 
+	"github.com/temporalio/tctl-kit/pkg/output"
 	"github.com/urfave/cli/v2"
 )
 
-const (
-	DefaultListPageSize = 20
-)
-
-// NewPager returns a writer such as stdout, "less", "more" or a pager provided by the user.
-// A user can provide the pager name with a pager flag or env variable.
-// If no pager is provided, it will fall back to stdout.
-func NewPager(c *cli.Context, pager string) (io.Writer, func()) {
-	noPager := c.Bool(FlagNoPager)
-	if noPager || pager == "" || pager == string(Stdout) {
-		return os.Stdout, func() {}
-	}
-
-	exe, err := lookupPager(pager)
-	if err != nil {
-		return os.Stdout, func() {}
-	}
-
-	cmd := exec.Command(exe)
-
-	if pager == string(Less) {
-		env := os.Environ()
-		env = append(env, "LESS=FRX")
-		cmd.Env = env
-	}
-
-	signal.Ignore(syscall.SIGPIPE)
-
-	reader, writer := io.Pipe()
-	cmd.Stdin = reader
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		err := cmd.Run()
-		if err != nil {
-			panic(err)
-		}
-	}()
-
-	return writer, func() {
-		writer.Close()
-		<-done
+type item struct {
+	Name   string
+	Value  string
+	Nested struct {
+		NName  string
+		NValue string
 	}
 }
 
-func lookupPager(pagerName string) (string, error) {
-	if pagerName == "" {
-		return "", errors.New("no pager provided")
+func setupTableTest() (*cli.Context, func()) {
+	app := cli.NewApp()
+	flagSet := flag.FlagSet{}
+	ctx := cli.NewContext(app, &flagSet, nil)
+
+	return ctx, func() {}
+}
+
+func ExamplePrintTable() {
+	ctx, teardown := setupTableTest()
+	defer teardown()
+
+	structItems := []*item{
+		{
+			Name:  "foo1",
+			Value: "bar1",
+			Nested: struct {
+				NName  string
+				NValue string
+			}{
+				NName:  "baz1",
+				NValue: "qux1",
+			},
+		},
 	}
 
-	if path, err := exec.LookPath(pagerName); err == nil {
-		return path, nil
+	var items []interface{}
+	for _, item := range structItems {
+		items = append(items, item)
 	}
 
-	return pagerName, errors.New("unable to find pager " + pagerName)
+	po := output.PrintOptions{
+		Fields:   []string{"Name", "Value", "Nested.NName", "Nested.NValue"},
+		NoHeader: true,
+	}
+
+	output.PrintTable(ctx, os.Stdout, items, &po)
+
+	// Output:
+	// foo1  bar1  baz1  qux1
 }
