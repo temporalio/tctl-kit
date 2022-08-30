@@ -28,11 +28,16 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
 )
 
 type Config struct {
-	viper *viper.Viper
+	Aliases    map[string]string            `yaml:"aliases"`
+	CurrentEnv string                       `yaml:"current-env"`
+	Envs       map[string]map[string]string `yaml:"env"`
+	Version    string                       `yaml:"version"`
+
+	path string
 }
 
 func NewConfig(appName, configName string) (*Config, error) {
@@ -45,81 +50,126 @@ func NewConfig(appName, configName string) (*Config, error) {
 
 	mkfile(dpath, configName+".yaml")
 
-	v := viper.New()
-	v.AddConfigPath(dpath)
-	v.SetConfigName(configName)
-	v.SetConfigType("yaml")
-	v.SetDefault(KeyAliases, map[string]string{})
-	v.SetDefault(KeyCurrentEnvironment, "local")
-	v.SetDefault(KeyEnvironment, map[string]map[string]string{"local": nil})
-
-	if err := v.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// Config file not found; ignore error if desired
-		} else {
-			return nil, err
-		}
-	}
-
-	return &Config{viper: v}, nil
-}
-
-func (c *Config) Get(key string) (string, error) {
-	err := validateKey(key)
-	if err != nil {
-		return "", err
-	}
-
-	if c.viper.IsSet(key) {
-		return c.viper.GetString(key), nil
-	}
-
-	return "", nil
-}
-
-func (c *Config) GetEnv(name string) (map[string]string, error) {
-	err := validateKey(name)
+	cfgPath := filepath.Join(dpath, configName+".yaml")
+	cfg, err := readConfig(cfgPath)
 	if err != nil {
 		return nil, err
 	}
 
-	return c.viper.GetStringMapString(KeyEnvironment + "." + name), nil
-}
-
-func (c *Config) GetByCurrentEnvironment(key string) (string, error) {
-	env := c.viper.GetString(KeyCurrentEnvironment)
-	fullKey := getFullKey(env, key)
-
-	return c.Get(fullKey)
-}
-
-func (c *Config) Set(key string, value string) error {
-	err := validateKey(key)
-	if err != nil {
-		return err
+	if cfg.CurrentEnv == "" {
+		cfg.CurrentEnv = "local"
 	}
 
-	c.viper.Set(key, value)
+	if cfg.Aliases == nil {
+		cfg.Aliases = map[string]string{}
+	}
 
-	if err := c.viper.WriteConfig(); err != nil {
-		return err
+	if cfg.Envs == nil {
+		cfg.Envs = map[string]map[string]string{"local": {}}
+	}
+
+	cfg.path = cfgPath
+
+	return cfg, nil
+}
+
+func (c *Config) Alias(name string) string {
+	return c.Aliases[name]
+}
+
+func (c *Config) SetAlias(name, value string) error {
+	if err := validateKey(name); err != nil {
+		return fmt.Errorf("invalid alias name: %v", err)
+	}
+
+	c.Aliases[name] = value
+
+	return c.writeFile()
+}
+
+func (c *Config) SetCurrentEnv(name string) error {
+	if err := validateKey(name); err != nil {
+		return fmt.Errorf("invalid env name: %v", err)
+	}
+
+	c.CurrentEnv = name
+
+	return c.writeFile()
+}
+
+func (c *Config) Env(name string) map[string]string {
+	return c.Envs[name]
+}
+
+func (c *Config) RemoveEnv(name string) error {
+	if err := validateKey(name); err != nil {
+		return fmt.Errorf("invalid env name: %v", err)
+	}
+
+	if c.CurrentEnv == name {
+		return fmt.Errorf("unable to remove current env")
+	}
+
+	delete(c.Envs, name)
+
+	return c.writeFile()
+}
+
+func (c *Config) EnvProperty(env, key string) string {
+	if env, ok := c.Envs[env]; ok {
+		return env[key]
+	}
+
+	return ""
+}
+
+func (c *Config) SetEnvProperty(env, key, value string) error {
+	if err := validateKey(env); err != nil {
+		return fmt.Errorf("invalid env name: %v", err)
+	}
+
+	if err := validateKey(key); err != nil {
+		return fmt.Errorf("invalid property key: %v", err)
+	}
+
+	if _, ok := c.Envs[env]; !ok {
+		c.Envs[env] = map[string]string{}
+	}
+
+	c.Envs[env][key] = value
+
+	return c.writeFile()
+}
+
+func (c *Config) RemoveEnvProperty(envName, key string) error {
+	if env, ok := c.Envs[envName]; ok {
+		delete(env, key)
+
+		return c.writeFile()
 	}
 
 	return nil
 }
 
+func (c *Config) SetVersion(value string) error {
+	c.Version = value
+
+	return c.writeFile()
+}
+
 func mkfile(dirPath, filename string) (string, error) {
-	err := mkdir(dirPath)
-	if err != nil {
+	if err := mkdir(dirPath); err != nil {
 		return "", err
 	}
+
 	fpath := filepath.Join(dirPath, filename)
 
 	if _, err := os.Stat(fpath); err != nil {
 		fmt.Printf("creating config file: %v\n", fpath)
 		file, err := os.Create(fpath)
-		if err != nil {
+		if err == nil {
 			defer file.Close()
+		} else {
 			return fpath, err
 		}
 	}
@@ -137,16 +187,40 @@ func mkdir(path string) error {
 	return nil
 }
 
-func getFullKey(env, path string) string {
-	return KeyEnvironment + "." + env + "." + path
+func readConfig(path string) (*Config, error) {
+	cfgYaml, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read config file: %v", err)
+	}
+
+	var config Config
+	if err := yaml.Unmarshal(cfgYaml, &config); err != nil {
+		return nil, fmt.Errorf("unable to unmarshal config file: %v", err)
+	}
+
+	return &config, nil
+}
+
+func (c *Config) writeFile() error {
+	cfgYaml, err := yaml.Marshal(c)
+	if err != nil {
+		fmt.Printf("unable to marshal config structure: %v", err)
+	}
+
+	err = os.WriteFile(c.path, cfgYaml, 0644)
+	if err != nil {
+		return fmt.Errorf("unable to write config file: %v", err)
+	}
+
+	return nil
 }
 
 // validateKey validates the key against the following rules:
 // 1. key must start with a letter
-// 2. key must contain only word characters, dashes or dots
+// 2. key must contain only word characters and dashes
 // 3. key must end with a letter or number
 func validateKey(key string) error {
-	pattern := `^[a-z][\w\-\.]*[a-z0-9]$`
+	pattern := `^[a-z][\w\-]*[a-z0-9]$`
 
 	matched, err := regexp.MatchString(pattern, key)
 	if err != nil {
@@ -154,7 +228,7 @@ func validateKey(key string) error {
 	}
 
 	if !matched {
-		return fmt.Errorf("invalid key: %v", key)
+		return fmt.Errorf("invalid key: %v. Key must follow pattern: %s", key, pattern)
 	}
 
 	return nil
