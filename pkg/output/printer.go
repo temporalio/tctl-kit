@@ -47,8 +47,8 @@ type PrintOptions struct {
 	FieldsLong []string
 	// ForceFields ignores user provided fields and uses print options instead. Useful when printing secondary data
 	ForceFields bool
-	// Output is the output format to use: table, json..
-	Output OutputOption
+	// OutputFormat is the output format to use: table, json..
+	OutputFormat OutputOption
 	// Pager is the pager to use for interactive mode. Default - stdout
 	Pager pager.PagerOption
 	// NoHeader removes the header in the table output
@@ -141,8 +141,8 @@ func getOutputFormat(c *cli.Context, opts *PrintOptions) OutputOption {
 	if opts != nil {
 		if c.IsSet(FlagOutput) {
 			return output
-		} else if opts.Output != "" {
-			return opts.Output
+		} else if opts.OutputFormat != "" {
+			return opts.OutputFormat
 		}
 	}
 
