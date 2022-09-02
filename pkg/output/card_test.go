@@ -22,52 +22,61 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package output
+package output_test
 
 import (
-	"fmt"
-	"io"
-	"strings"
+	"flag"
+	"os"
 
-	"github.com/temporalio/tctl-kit/pkg/process"
+	"github.com/temporalio/tctl-kit/pkg/output"
 	"github.com/urfave/cli/v2"
 )
 
-type cardColumns struct {
-	Name  string
-	Value interface{}
+func ExamplePrintCards() {
+	ctx, teardown := setupCardTest()
+	defer teardown()
+
+	structItems := []*dataForCard{
+		{
+			Name: "foo1",
+			Nested: struct {
+				NName  string
+				NValue string
+			}{
+				NName:  "baz1",
+				NValue: "qux1",
+			},
+		},
+	}
+
+	var items []interface{}
+	for _, item := range structItems {
+		items = append(items, item)
+	}
+
+	po := output.PrintOptions{
+		Fields:     []string{"Name"},
+		FieldsLong: []string{"Nested.NName", "Nested.NValue"},
+	}
+
+	output.PrintCards(ctx, os.Stdout, items, &po)
+
+	// Output:
+	// Name  foo1
 }
 
-func PrintCards(c *cli.Context, w io.Writer, items []interface{}, opts *PrintOptions) {
-	fields := opts.Fields
-	if fields == nil {
-		fields = extractFieldNames(items[0], []string{}, "", fieldsDepth)
-	}
+func setupCardTest() (*cli.Context, func()) {
+	app := cli.NewApp()
+	flagSet := flag.FlagSet{}
+	ctx := cli.NewContext(app, &flagSet, nil)
 
-	valuesList, err := extractFieldValues(items, fields)
-	if err != nil {
-		process.ErrorAndExit("unable to extract values", err)
-	}
+	return ctx, func() {}
+}
 
-	for _, obj := range valuesList {
-		var rows []*cardColumns
-
-		for j, fieldValue := range obj {
-			rows = append(rows, &cardColumns{
-				Name:  fields[j],
-				Value: fieldValue,
-			})
-		}
-
-		var rowsI []interface{}
-		for _, row := range rows {
-			rowsI = append(rowsI, row)
-		}
-
-		opts.NoHeader = true
-		opts.Fields = []string{"Name", "Value"}
-		PrintTable(c, w, rowsI, opts)
-
-		fmt.Println(strings.Repeat(opts.Separator, 10))
+type dataForCard struct {
+	Name   string
+	Nested struct {
+		NName  string
+		NValue string
 	}
 }

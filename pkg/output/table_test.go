@@ -32,7 +32,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-type item struct {
+type dataForTable struct {
 	Name   string
 	Value  string
 	Nested struct {
@@ -53,7 +53,7 @@ func ExamplePrintTable() {
 	ctx, teardown := setupTableTest()
 	defer teardown()
 
-	structItems := []*item{
+	structItems := []*dataForTable{
 		{
 			Name:  "foo1",
 			Value: "bar1",
