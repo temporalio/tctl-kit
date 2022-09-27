@@ -29,7 +29,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/temporalio/tctl-kit/pkg/process"
 	"github.com/urfave/cli/v2"
 )
 
@@ -38,7 +37,7 @@ type cardColumns struct {
 	Value interface{}
 }
 
-func PrintCards(c *cli.Context, w io.Writer, items []interface{}, opts *PrintOptions) {
+func PrintCards(c *cli.Context, w io.Writer, items []interface{}, opts *PrintOptions) error {
 	fields := opts.Fields
 	if fields == nil {
 		fields = extractFieldNames(items[0], []string{}, "", fieldsDepth)
@@ -46,7 +45,7 @@ func PrintCards(c *cli.Context, w io.Writer, items []interface{}, opts *PrintOpt
 
 	valuesList, err := extractFieldValues(items, fields)
 	if err != nil {
-		process.ErrorAndExit("unable to extract values", err)
+		return fmt.Errorf("unable to print card view: %w", err)
 	}
 
 	for _, obj := range valuesList {
@@ -66,8 +65,13 @@ func PrintCards(c *cli.Context, w io.Writer, items []interface{}, opts *PrintOpt
 
 		opts.NoHeader = true
 		opts.Fields = []string{"Name", "Value"}
-		PrintTable(c, w, rowsI, opts)
+		err = PrintTable(c, w, rowsI, opts)
+		if err != nil {
+			return err
+		}
 
-		fmt.Println(strings.Repeat(opts.Separator, 10))
+		fmt.Fprintln(w, strings.Repeat(opts.Separator, 10))
 	}
+
+	return nil
 }
