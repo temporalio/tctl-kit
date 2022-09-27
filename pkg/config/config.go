@@ -79,7 +79,7 @@ func (c *Config) Alias(name string) string {
 
 func (c *Config) SetAlias(name, value string) error {
 	if err := validateKey(name); err != nil {
-		return fmt.Errorf("invalid alias name: %v", err)
+		return fmt.Errorf("invalid alias name: %w", err)
 	}
 
 	c.Aliases[name] = value
@@ -89,7 +89,7 @@ func (c *Config) SetAlias(name, value string) error {
 
 func (c *Config) SetCurrentEnv(name string) error {
 	if err := validateKey(name); err != nil {
-		return fmt.Errorf("invalid env name: %v", err)
+		return fmt.Errorf("invalid env name: %w", err)
 	}
 
 	c.CurrentEnv = name
@@ -103,7 +103,7 @@ func (c *Config) Env(name string) map[string]string {
 
 func (c *Config) RemoveEnv(name string) error {
 	if err := validateKey(name); err != nil {
-		return fmt.Errorf("invalid env name: %v", err)
+		return fmt.Errorf("invalid env name: %w", err)
 	}
 
 	if c.CurrentEnv == name {
@@ -125,11 +125,11 @@ func (c *Config) EnvProperty(env, key string) string {
 
 func (c *Config) SetEnvProperty(env, key, value string) error {
 	if err := validateKey(env); err != nil {
-		return fmt.Errorf("invalid env name: %v", err)
+		return fmt.Errorf("invalid env name: %w", err)
 	}
 
 	if err := validateKey(key); err != nil {
-		return fmt.Errorf("invalid property key: %v", err)
+		return fmt.Errorf("invalid property key: %w", err)
 	}
 
 	if _, ok := c.Envs[env]; !ok {
@@ -190,12 +190,12 @@ func mkdir(path string) error {
 func readConfig(path string) (*Config, error) {
 	cfgYaml, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read config file: %v", err)
+		return nil, fmt.Errorf("unable to read config file: %w", err)
 	}
 
 	var config Config
 	if err := yaml.Unmarshal(cfgYaml, &config); err != nil {
-		return nil, fmt.Errorf("unable to unmarshal config file: %v", err)
+		return nil, fmt.Errorf("unable to unmarshal config file: %w", err)
 	}
 
 	return &config, nil
@@ -204,12 +204,12 @@ func readConfig(path string) (*Config, error) {
 func (c *Config) writeFile() error {
 	cfgYaml, err := yaml.Marshal(c)
 	if err != nil {
-		fmt.Printf("unable to marshal config structure: %v", err)
+		return fmt.Errorf("unable to marshal config: %w", err)
 	}
 
 	err = os.WriteFile(c.path, cfgYaml, 0644)
 	if err != nil {
-		return fmt.Errorf("unable to write config file: %v", err)
+		return fmt.Errorf("unable to write config file: %w", err)
 	}
 
 	return nil
@@ -228,7 +228,7 @@ func validateKey(key string) error {
 	}
 
 	if !matched {
-		return fmt.Errorf("invalid key: %v. Key must follow pattern: %s", key, pattern)
+		return fmt.Errorf("invalid key: %v. Key must follow pattern: %v", key, pattern)
 	}
 
 	return nil
