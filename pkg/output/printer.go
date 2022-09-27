@@ -166,7 +166,7 @@ func formatField(c *cli.Context, i interface{}) string {
 	if typ == reflect.TypeOf(time.Time{}) {
 		return format.FormatTime(c, val.Interface().(time.Time))
 	} else if kin == reflect.Struct && val.CanInterface() {
-		str, _ := ParseToJSON(c, i, false)
+		str, _ := ParseToJSON(i, false)
 
 		return str
 	} else {

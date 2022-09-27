@@ -6,7 +6,6 @@ require (
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.13.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/hokaccha/go-prettyjson v0.0.0-20210113012101-fb4e108d2519
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/stretchr/testify v1.8.0
 	github.com/urfave/cli/v2 v2.3.0
