@@ -37,15 +37,14 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func PrintJSON(c *cli.Context, w io.Writer, o interface{}) {
+func PrintJSON(c *cli.Context, w io.Writer, o interface{}) error {
 	json, err := ParseToJSON(c, o, true)
-
 	if err != nil {
-		fmt.Printf("Error when try to print pretty: %v\n", err)
-		fmt.Fprintln(w, o)
+		return fmt.Errorf("unable to print json: %s", err)
 	}
 
-	fmt.Fprintln(w, json)
+	_, err = fmt.Fprintln(w, json)
+	return err
 }
 
 func ParseToJSON(c *cli.Context, o interface{}, indent bool) (string, error) {

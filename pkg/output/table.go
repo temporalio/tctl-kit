@@ -25,11 +25,11 @@
 package output
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/temporalio/tctl-kit/pkg/color"
-	"github.com/temporalio/tctl-kit/pkg/process"
 	"github.com/urfave/cli/v2"
 )
 
@@ -37,7 +37,7 @@ var (
 	headerColor = tablewriter.Colors{tablewriter.FgHiMagentaColor}
 )
 
-func PrintTable(c *cli.Context, w io.Writer, items []interface{}, opts *PrintOptions) {
+func PrintTable(c *cli.Context, w io.Writer, items []interface{}, opts *PrintOptions) error {
 	colorFlag := c.String(color.FlagColor)
 	enableColor := colorFlag == string(color.Auto) || colorFlag == string(color.Always)
 	fields := opts.Fields
@@ -66,7 +66,7 @@ func PrintTable(c *cli.Context, w io.Writer, items []interface{}, opts *PrintOpt
 
 	rows, err := extractFieldValues(items, fields)
 	if err != nil {
-		process.ErrorAndExit("unable to print table", err)
+		return fmt.Errorf("unable to print table: %s", err)
 	}
 
 	for _, row := range rows {
@@ -78,4 +78,6 @@ func PrintTable(c *cli.Context, w io.Writer, items []interface{}, opts *PrintOpt
 	}
 	table.Render()
 	table.ClearRows()
+
+	return nil
 }

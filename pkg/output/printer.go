@@ -58,7 +58,7 @@ type PrintOptions struct {
 }
 
 // PrintItems prints items based on user flags or print options.
-func PrintItems(c *cli.Context, items []interface{}, opts *PrintOptions) {
+func PrintItems(c *cli.Context, items []interface{}, opts *PrintOptions) error {
 	fields := c.String(FlagFields)
 
 	pagerName := c.String(pager.FlagPager)
@@ -86,13 +86,14 @@ func PrintItems(c *cli.Context, items []interface{}, opts *PrintOptions) {
 	output := getOutputFormat(c, opts)
 	switch output {
 	case Table:
-		PrintTable(c, writer, items, opts)
+		return PrintTable(c, writer, items, opts)
 	case JSON:
-		PrintJSON(c, writer, items)
+		return PrintJSON(c, writer, items)
 	case Card:
-		PrintCards(c, writer, items, opts)
-	default:
+		return PrintCards(c, writer, items, opts)
 	}
+
+	return nil
 }
 
 // PrintIterator prints items from an iterator based on user flags or print options.
@@ -125,7 +126,10 @@ func PrintIterator(c *cli.Context, iter iterator.Iterator, opts *PrintOptions) e
 		if follow || isBatchFilled || !iter.HasNext() {
 			// for consistent formatting, print items in batches (ex. in Table output)
 			// else if --follow is on, print items as they are received
-			PrintItems(c, batch, opts)
+			err = PrintItems(c, batch, opts)
+			if err != nil {
+				return err
+			}
 			batch = batch[:0]
 			opts.NoHeader = true
 		}
