@@ -66,7 +66,7 @@ func PrintTable(c *cli.Context, w io.Writer, items []interface{}, opts *PrintOpt
 
 	rows, err := extractFieldValues(items, fields)
 	if err != nil {
-		return fmt.Errorf("unable to print table: %s", err)
+		return fmt.Errorf("unable to print table: %w", err)
 	}
 
 	for _, row := range rows {
