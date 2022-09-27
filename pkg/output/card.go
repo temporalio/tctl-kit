@@ -45,7 +45,7 @@ func PrintCards(c *cli.Context, w io.Writer, items []interface{}, opts *PrintOpt
 
 	valuesList, err := extractFieldValues(items, fields)
 	if err != nil {
-		return fmt.Errorf("unable to print card view: %s", err)
+		return fmt.Errorf("unable to print card view: %w", err)
 	}
 
 	for _, obj := range valuesList {
