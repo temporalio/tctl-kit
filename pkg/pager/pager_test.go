@@ -63,12 +63,12 @@ func TestPrintTable_StdoutFallback(t *testing.T) {
 	assert.Equal(t, w, os.Stdout)
 }
 
-func TestPrintTable_Less(t *testing.T) {
+func TestPrintTable_StdoutNonTTY(t *testing.T) {
 	ctx, teardown := setupPagerTest()
 	defer teardown()
 
 	w, close := pager.NewPager(ctx, "less")
 	defer close()
 
-	assert.NotEqual(t, w, os.Stdout)
+	assert.Equal(t, w, os.Stdout)
 }
