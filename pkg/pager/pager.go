@@ -32,6 +32,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/mattn/go-isatty"
 	"github.com/urfave/cli/v2"
 )
 
@@ -44,7 +45,7 @@ const (
 // If no pager is provided, it will fall back to stdout.
 func NewPager(c *cli.Context, pager string) (io.Writer, func()) {
 	noPager := c.Bool(FlagNoPager)
-	if noPager || pager == "" || pager == string(Stdout) {
+	if noPager || pager == "" || pager == string(Stdout) || !isatty.IsTerminal(os.Stdout.Fd()) {
 		return os.Stdout, func() {}
 	}
 
