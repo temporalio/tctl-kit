@@ -38,6 +38,16 @@ const (
 	cfgFile = "test-tctl-kit-config"
 )
 
+func TestNewConfigPermissionDenied(t *testing.T) {
+	expectedError := errors.New("open /tmp.yaml: permission denied")
+
+	_, err := config.NewConfig(appName, "../../../../../../../../../../../../tmp")
+
+	if assert.Error(t, err) {
+		assert.Equal(t, expectedError.Error(), err.Error())
+	}
+}
+
 func TestNewConfigCreatesFile(t *testing.T) {
 	path := getConfigPath(t)
 
