@@ -339,7 +339,8 @@ func TestEnvProperty(t *testing.T) {
 
 			for envName, envProps := range tc.expect {
 				for key, vExpected := range envProps {
-					vActual := cfg.EnvProperty(envName, key)
+					vActual, err := cfg.EnvProperty(envName, key)
+					assert.NoError(t, err)
 					assert.Equal(t, vActual, vExpected)
 				}
 			}

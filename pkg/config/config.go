@@ -115,12 +115,12 @@ func (c *Config) RemoveEnv(name string) error {
 	return c.writeFile()
 }
 
-func (c *Config) EnvProperty(env, key string) string {
+func (c *Config) EnvProperty(env, key string) (string, error) {
 	if env, ok := c.Envs[env]; ok {
-		return env[key]
+		return env[key], nil
 	}
 
-	return ""
+	return "", fmt.Errorf("env not found: %v", env)
 }
 
 func (c *Config) SetEnvProperty(env, key, value string) error {
