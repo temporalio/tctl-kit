@@ -48,7 +48,9 @@ func NewConfig(appName, configName string) (*Config, error) {
 
 	dpath = filepath.Join(dpath, ".config", appName)
 
-	mkfile(dpath, configName+".yaml")
+	if _, err = mkfile(dpath, configName+".yaml"); err != nil {
+		return nil, err
+	}
 
 	cfgPath := filepath.Join(dpath, configName+".yaml")
 	cfg, err := readConfig(cfgPath)
