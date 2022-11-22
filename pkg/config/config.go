@@ -23,6 +23,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -48,9 +49,11 @@ func NewConfig(appName, configName string) (*Config, error) {
 
 	dpath = filepath.Join(dpath, ".config", appName)
 
-	mkfile(dpath, configName+".yaml")
+	cfgPath, err := mkfile(dpath, configName+".yaml")
+	if err != nil {
+		return nil, err
+	}
 
-	cfgPath := filepath.Join(dpath, configName+".yaml")
 	cfg, err := readConfig(cfgPath)
 	if err != nil {
 		return nil, err
@@ -164,7 +167,12 @@ func mkfile(dirPath, filename string) (string, error) {
 
 	fpath := filepath.Join(dirPath, filename)
 
-	if _, err := os.Stat(fpath); err != nil {
+	_, err := os.Stat(fpath)
+	if err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return "", err
+		}
+
 		fmt.Printf("creating config file: %v\n", fpath)
 		file, err := os.Create(fpath)
 		if err == nil {
