@@ -40,25 +40,28 @@ type Config struct {
 	Envs       map[string]map[string]string `yaml:"env"`
 	Version    string                       `yaml:"version"`
 
-	path string
+	dir  string
+	file string
+}
+
+func (c *Config) Path() string {
+	return filepath.Join(c.dir, c.file)
 }
 
 func NewConfig(appName, configName string) (*Config, error) {
-	dpath, err := os.UserHomeDir()
+	dir, file, err := configPath(appName, configName)
+
 	if err != nil {
 		return nil, err
 	}
 
-	dpath = filepath.Join(dpath, ".config", appName)
-
-	cfgPath, err := mkfile(dpath, configName+".yaml")
-	if err != nil {
-		return nil, err
-	}
+	cfgPath := filepath.Join(dir, file)
 
 	cfg, err := readConfig(cfgPath)
-	if err != nil {
-		return nil, err
+	if errors.Is(err, os.ErrNotExist) {
+		cfg = &Config{}
+	} else if err != nil {
+		return nil, fmt.Errorf("unable to read config file: %w", err)
 	}
 
 	if cfg.CurrentEnv == "" {
@@ -73,7 +76,8 @@ func NewConfig(appName, configName string) (*Config, error) {
 		cfg.Envs = map[string]map[string]string{DefaultEnv: {}}
 	}
 
-	cfg.path = cfgPath
+	cfg.dir = dir
+	cfg.file = file
 
 	return cfg, nil
 }
@@ -162,12 +166,12 @@ func (c *Config) SetVersion(value string) error {
 	return c.writeFile()
 }
 
-func mkfile(dirPath, filename string) (string, error) {
-	if err := mkdir(dirPath); err != nil {
+func mkfile(dir, file string) (string, error) {
+	if err := mkdir(dir); err != nil {
 		return "", err
 	}
 
-	fpath := filepath.Join(dirPath, filename)
+	fpath := filepath.Join(dir, file)
 
 	_, err := os.Stat(fpath)
 	if err != nil {
@@ -198,7 +202,7 @@ func mkdir(path string) error {
 func readConfig(path string) (*Config, error) {
 	cfgYaml, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("unable to read config file: %w", err)
+		return nil, err
 	}
 
 	var config Config
@@ -210,12 +214,17 @@ func readConfig(path string) (*Config, error) {
 }
 
 func (c *Config) writeFile() error {
+	fPath, err := mkfile(c.dir, c.file)
+	if err != nil {
+		return err
+	}
+
 	cfgYaml, err := yaml.Marshal(c)
 	if err != nil {
 		return fmt.Errorf("unable to marshal config: %w", err)
 	}
 
-	err = os.WriteFile(c.path, cfgYaml, 0644)
+	err = os.WriteFile(fPath, cfgYaml, 0644)
 	if err != nil {
 		return fmt.Errorf("unable to write config file: %w", err)
 	}
@@ -240,4 +249,16 @@ func validateKey(key string) error {
 	}
 
 	return nil
+}
+
+func configPath(appName, configName string) (string, string, error) {
+	dir, err := os.UserHomeDir()
+	if err != nil {
+		return "", "", err
+	}
+
+	dir = filepath.Join(dir, ".config", appName)
+	file := configName + ".yaml"
+
+	return dir, file, nil
 }
