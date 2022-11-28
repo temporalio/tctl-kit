@@ -24,8 +24,10 @@ package config_test
 
 import (
 	"errors"
+	"io/fs"
 	"log"
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/pborman/uuid"
@@ -38,14 +40,23 @@ const (
 )
 
 func TestNewConfigPermissionDenied(t *testing.T) {
-	expectedError := errors.New("open /tmp.yaml: permission denied")
-
 	cfg, err := config.NewConfig(appName, "../../../../../../../../../../../../tmp")
 	assert.NoError(t, err)
 
 	err = cfg.SetEnvProperty("test", "test", "test")
 
-	if assert.Error(t, err) {
+	if runtime.GOOS == "windows" {
+		if e, ok := err.(*fs.PathError); !ok {
+			t.Errorf("expected *fs.PathError, got %T", e)
+		}
+	} else {
+		if e, ok := err.(*os.PathError); !ok {
+			t.Errorf("expected *os.PathError, got %T", e)
+		}
+	}
+
+	if runtime.GOOS == "linux" {
+		expectedError := errors.New("open /tmp.yaml: permission denied")
 		assert.Equal(t, expectedError.Error(), err.Error())
 	}
 }
