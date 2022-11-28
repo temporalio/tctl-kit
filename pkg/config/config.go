@@ -173,7 +173,6 @@ func mkfile(dirPath, filename string) (string, error) {
 			return "", err
 		}
 
-		fmt.Printf("creating config file: %v\n", fpath)
 		file, err := os.Create(fpath)
 		if err == nil {
 			defer file.Close()
@@ -187,7 +186,6 @@ func mkfile(dirPath, filename string) (string, error) {
 
 func mkdir(path string) error {
 	if _, err := os.Stat(path); err != nil {
-		fmt.Printf("creating config dir: %v\n", path)
 		err = os.MkdirAll(path, 0755)
 		return err
 	}
