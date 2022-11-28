@@ -32,6 +32,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const DefaultEnv = "default"
+
 type Config struct {
 	Aliases    map[string]string            `yaml:"aliases"`
 	CurrentEnv string                       `yaml:"current-env"`
@@ -60,7 +62,7 @@ func NewConfig(appName, configName string) (*Config, error) {
 	}
 
 	if cfg.CurrentEnv == "" {
-		cfg.CurrentEnv = "local"
+		cfg.CurrentEnv = DefaultEnv
 	}
 
 	if cfg.Aliases == nil {
@@ -68,7 +70,7 @@ func NewConfig(appName, configName string) (*Config, error) {
 	}
 
 	if cfg.Envs == nil {
-		cfg.Envs = map[string]map[string]string{"local": {}}
+		cfg.Envs = map[string]map[string]string{DefaultEnv: {}}
 	}
 
 	cfg.path = cfgPath

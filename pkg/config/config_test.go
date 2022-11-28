@@ -384,7 +384,7 @@ func TestSetEnvProperty(t *testing.T) {
 		},
 		"accepts empty value": {
 			input:    []envprop{{"local", "key", ""}},
-			expected: "env:\n    local:\n        key: \"\"\n",
+			expected: "local:\n        key: \"\"",
 			err:      false,
 		},
 		"merges env properties": {
