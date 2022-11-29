@@ -45,19 +45,24 @@ func TestNewConfigPermissionDenied(t *testing.T) {
 
 	err = cfg.SetEnvProperty("test", "test", "test")
 
-	if runtime.GOOS == "windows" {
-		if e, ok := err.(*fs.PathError); !ok {
-			t.Errorf("expected *fs.PathError, got %T", e)
-		}
-	} else {
-		if e, ok := err.(*os.PathError); !ok {
-			t.Errorf("expected *os.PathError, got %T", e)
-		}
+	if !assert.Error(t, err) {
+		t.Errorf("Expected error, got %v", err)
 	}
 
-	if runtime.GOOS == "linux" {
-		expectedError := errors.New("open /tmp.yaml: permission denied")
-		assert.Equal(t, expectedError.Error(), err.Error())
+	switch runtime.GOOS {
+
+	case "windows":
+		if !errors.Is(err, fs.ErrPermission) {
+			t.Errorf("expected error %v, got %T", fs.ErrPermission, err)
+		}
+	case "darwin":
+		if _, ok := err.(*fs.PathError); !ok {
+			t.Errorf("expected error %T, got %T", fs.ErrPermission, err)
+		}
+	default:
+		if !errors.Is(err, os.ErrPermission) {
+			t.Errorf("expected error %v, got %T", fs.ErrPermission, err)
+		}
 	}
 }
 
