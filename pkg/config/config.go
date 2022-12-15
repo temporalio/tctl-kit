@@ -224,9 +224,21 @@ func (c *Config) writeFile() error {
 		return fmt.Errorf("unable to marshal config: %w", err)
 	}
 
-	err = os.WriteFile(fPath, cfgYaml, 0644)
+	err = os.WriteFile(fPath, cfgYaml, os.FileMode(OwnerReadWrite))
 	if err != nil {
 		return fmt.Errorf("unable to write config file: %w", err)
+	}
+
+	fileinfo, err := os.Stat(c.Path())
+	if err != nil {
+		return fmt.Errorf("unable to stat config file: %w", err)
+	}
+
+	if fileinfo.Mode() != os.FileMode(OwnerReadWrite) {
+		err = os.Chmod(c.Path(), os.FileMode(OwnerReadWrite))
+		if err != nil {
+			return fmt.Errorf("unable to update config file permission to %s: %w", OwnerReadWrite, err)
+		}
 	}
 
 	return nil
