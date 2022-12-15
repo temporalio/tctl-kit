@@ -31,5 +31,5 @@ const (
 )
 
 const (
-	OwnerReadWrite os.FileMode = 0600
+	ownerReadWrite os.FileMode = 0600
 )

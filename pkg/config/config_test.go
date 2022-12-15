@@ -106,7 +106,7 @@ func TestFilePermissionIsOwnerReadWrite(t *testing.T) {
 	fileInfo, err := os.Stat(path)
 	assert.NoError(t, err)
 
-        	assert.Equal(t, os.FileMode(0600).String(), fileInfo.Mode().String())
+	assert.Equal(t, os.FileMode(0600).String(), fileInfo.Mode().String())
 }
 
 func TestAlias(t *testing.T) {

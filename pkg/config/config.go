@@ -224,7 +224,7 @@ func (c *Config) writeFile() error {
 		return fmt.Errorf("unable to marshal config: %w", err)
 	}
 
-	err = os.WriteFile(fPath, cfgYaml, os.FileMode(OwnerReadWrite))
+	err = os.WriteFile(fPath, cfgYaml, os.FileMode(ownerReadWrite))
 	if err != nil {
 		return fmt.Errorf("unable to write config file: %w", err)
 	}
@@ -234,10 +234,11 @@ func (c *Config) writeFile() error {
 		return fmt.Errorf("unable to stat config file: %w", err)
 	}
 
-	if fileinfo.Mode() != os.FileMode(OwnerReadWrite) {
-		err = os.Chmod(c.Path(), os.FileMode(OwnerReadWrite))
+	if fileinfo.Mode() != os.FileMode(ownerReadWrite) {
+		// umask may have changed the file permissions, ensure they are correct
+		err = os.Chmod(c.Path(), os.FileMode(ownerReadWrite))
 		if err != nil {
-			return fmt.Errorf("unable to update config file permission to %s: %w", OwnerReadWrite, err)
+			return fmt.Errorf("unable to update config file permission to %s: %w", ownerReadWrite, err)
 		}
 	}
 
