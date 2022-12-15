@@ -211,7 +211,9 @@ func TestSetCurrentEnv(t *testing.T) {
 	for name, tc := range testcases {
 		t.Run(name, func(t *testing.T) {
 			cfg, teardown := setupConfig(t, "")
-			defer teardown()
+			if !tc.err {
+				defer teardown()
+			}
 
 			err := cfg.SetCurrentEnv(tc.input)
 			if tc.err {
@@ -305,7 +307,9 @@ env:
 	for name, tc := range testcases {
 		t.Run(name, func(t *testing.T) {
 			cfg, teardown := setupConfig(t, tc.inputCfg)
-			defer teardown()
+			if tc.err && tc.inputCfg != "" {
+				defer teardown()
+			}
 
 			err := cfg.RemoveEnv(tc.inputRemove)
 			if tc.err {
@@ -426,7 +430,7 @@ func TestSetEnvProperty(t *testing.T) {
 }
 
 func setupConfig(t *testing.T, content string) (*config.Config, func()) {
-	file := "config-" + uuid.New()[:4] + ".yaml"
+	file := "config-" + uuid.New()[:4]
 
 	cfg, err := config.NewConfig(appName, file)
 	assert.NoError(t, err)
