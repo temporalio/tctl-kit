@@ -26,41 +26,43 @@ import (
 	"errors"
 	"log"
 	"os"
-	"path/filepath"
 	"testing"
 
+	"github.com/pborman/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/temporalio/tctl-kit/pkg/config"
 )
 
 const (
 	appName = "test-tctl-kit"
-	cfgFile = "test-tctl-kit-config"
 )
 
 func TestNewConfigPermissionDenied(t *testing.T) {
 	expectedError := errors.New("open /tmp.yaml: permission denied")
 
-	_, err := config.NewConfig(appName, "../../../../../../../../../../../../tmp")
+	cfg, err := config.NewConfig(appName, "../../../../../../../../../../../../tmp")
+	assert.NoError(t, err)
+
+	err = cfg.SetEnvProperty("test", "test", "test")
 
 	if assert.Error(t, err) {
 		assert.Equal(t, expectedError.Error(), err.Error())
 	}
 }
 
-func TestNewConfigCreatesFile(t *testing.T) {
-	path := getConfigPath(t)
+func TestCreatesConfigFileLazily(t *testing.T) {
+	cfg, teardown := setupConfig(t, "")
+	defer teardown()
 
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		assert.Error(t, err)
-	}
-
-	initConfig(t)
+	path := cfg.Path()
 
 	_, err := os.Stat(path)
-	assert.NoError(t, err)
+	assert.ErrorIs(t, err, os.ErrNotExist)
 
-	removeConfig(t)
+	cfg.SetEnvProperty("test", "test", "test")
+
+	_, err = os.Stat(path)
+	assert.NoError(t, err)
 
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		assert.Error(t, err)
@@ -91,9 +93,8 @@ func TestAlias(t *testing.T) {
 
 	for name, tc := range testcases {
 		t.Run(name, func(t *testing.T) {
-			writeConfig(t, tc.input)
-			cfg := initConfig(t)
-			defer removeConfig(t)
+			cfg, teardown := setupConfig(t, tc.input)
+			defer teardown()
 
 			for aliasName, vExpected := range tc.expect {
 				vActual := cfg.Alias(aliasName)
@@ -134,8 +135,11 @@ func TestSetAlias(t *testing.T) {
 
 	for name, tc := range testcases {
 		t.Run(name, func(t *testing.T) {
-			cfg := initConfig(t)
-			defer removeConfig(t)
+			cfg, teardown := setupConfig(t, "")
+
+			if !tc.err {
+				defer teardown()
+			}
 
 			for key, value := range tc.input {
 				err := cfg.SetAlias(key, value)
@@ -147,7 +151,7 @@ func TestSetAlias(t *testing.T) {
 			}
 
 			if !tc.err {
-				assert.Contains(t, readConfig(t), tc.expected)
+				assert.Contains(t, readConfig(t, cfg), tc.expected)
 			}
 		})
 	}
@@ -173,9 +177,8 @@ func TestCurrentEnv(t *testing.T) {
 
 	for name, tc := range testcases {
 		t.Run(name, func(t *testing.T) {
-			writeConfig(t, tc.input)
-			cfg := initConfig(t)
-			defer removeConfig(t)
+			cfg, teardown := setupConfig(t, tc.input)
+			defer teardown()
 
 			for aliasName, vExpected := range tc.expect {
 				vActual := cfg.Alias(aliasName)
@@ -207,15 +210,17 @@ func TestSetCurrentEnv(t *testing.T) {
 
 	for name, tc := range testcases {
 		t.Run(name, func(t *testing.T) {
-			cfg := initConfig(t)
-			defer removeConfig(t)
+			cfg, teardown := setupConfig(t, "")
+			if !tc.err {
+				defer teardown()
+			}
 
 			err := cfg.SetCurrentEnv(tc.input)
 			if tc.err {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Contains(t, readConfig(t), tc.expected)
+				assert.Contains(t, readConfig(t, cfg), tc.expected)
 			}
 		})
 	}
@@ -247,9 +252,8 @@ func TestEnv(t *testing.T) {
 
 	for name, tc := range testcases {
 		t.Run(name, func(t *testing.T) {
-			writeConfig(t, tc.input)
-			cfg := initConfig(t)
-			defer removeConfig(t)
+			cfg, teardown := setupConfig(t, tc.input)
+			defer teardown()
 
 			for envName, envProps := range tc.expect {
 				envActual := cfg.Env(envName)
@@ -302,16 +306,17 @@ env:
 
 	for name, tc := range testcases {
 		t.Run(name, func(t *testing.T) {
-			writeConfig(t, tc.inputCfg)
-			cfg := initConfig(t)
-			defer removeConfig(t)
+			cfg, teardown := setupConfig(t, tc.inputCfg)
+			if tc.err && tc.inputCfg != "" {
+				defer teardown()
+			}
 
 			err := cfg.RemoveEnv(tc.inputRemove)
 			if tc.err {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Contains(t, readConfig(t), tc.expected)
+				assert.Contains(t, readConfig(t, cfg), tc.expected)
 			}
 		})
 	}
@@ -343,9 +348,8 @@ func TestEnvProperty(t *testing.T) {
 
 	for name, tc := range testcases {
 		t.Run(name, func(t *testing.T) {
-			writeConfig(t, tc.input)
-			cfg := initConfig(t)
-			defer removeConfig(t)
+			cfg, teardown := setupConfig(t, tc.input)
+			defer teardown()
 
 			for envName, envProps := range tc.expect {
 				for key, vExpected := range envProps {
@@ -404,8 +408,10 @@ func TestSetEnvProperty(t *testing.T) {
 
 	for name, tc := range testcases {
 		t.Run(name, func(t *testing.T) {
-			cfg := initConfig(t)
-			defer removeConfig(t)
+			cfg, teardown := setupConfig(t, "")
+			if !tc.err {
+				defer teardown()
+			}
 
 			for _, envprop := range tc.input {
 				err := cfg.SetEnvProperty(envprop.env, envprop.key, envprop.value)
@@ -417,21 +423,36 @@ func TestSetEnvProperty(t *testing.T) {
 			}
 
 			if !tc.err {
-				assert.Contains(t, readConfig(t), tc.expected)
+				assert.Contains(t, readConfig(t, cfg), tc.expected)
 			}
 		})
 	}
 }
 
-func initConfig(t *testing.T) *config.Config {
-	cfg, err := config.NewConfig(appName, cfgFile)
+func setupConfig(t *testing.T, content string) (*config.Config, func()) {
+	file := "config-" + uuid.New()[:4]
+
+	cfg, err := config.NewConfig(appName, file)
 	assert.NoError(t, err)
 
-	return cfg
+	if content != "" {
+		writeConfig(t, cfg.Path(), content)
+		cfg, err = config.NewConfig(appName, file)
+		assert.NoError(t, err)
+	}
+
+	teardown := func() {
+		path := cfg.Path()
+
+		err := os.Remove(path)
+		assert.NoError(t, err)
+	}
+
+	return cfg, teardown
 }
 
-func readConfig(t *testing.T) string {
-	path := getConfigPath(t)
+func readConfig(t *testing.T, cfg *config.Config) string {
+	path := cfg.Path()
 	content, err := os.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
@@ -439,26 +460,9 @@ func readConfig(t *testing.T) string {
 	return string(content)
 }
 
-func writeConfig(t *testing.T, content string) {
-	path := getConfigPath(t)
+func writeConfig(t *testing.T, path, content string) {
 	err := os.WriteFile(path, []byte(content), 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-func getConfigPath(t *testing.T) string {
-	dpath, err := os.UserHomeDir()
-	assert.NoError(t, err)
-
-	path := filepath.Join(dpath, ".config", appName, cfgFile+".yaml")
-
-	return path
-}
-
-func removeConfig(t *testing.T) {
-	path := getConfigPath(t)
-
-	err := os.Remove(path)
-	assert.NoError(t, err)
 }
