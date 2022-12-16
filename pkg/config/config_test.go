@@ -98,6 +98,7 @@ func TestFilePermissionIsOwnerReadWrite(t *testing.T) {
 	cfg, teardown := setupConfig(t, "")
 	defer teardown()
 
+	// ensure the config file is created
 	err := cfg.SetEnvProperty("test", "test", "test")
 	assert.NoError(t, err)
 
