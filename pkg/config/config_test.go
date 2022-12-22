@@ -40,6 +40,10 @@ const (
 )
 
 func TestNewConfigPermissionDenied(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Emulating permission denied on Windows results in C:\tmp.yaml and no error")
+	}
+
 	cfg, err := config.NewConfig(appName, "../../../../../../../../../../../../tmp")
 	assert.NoError(t, err)
 
