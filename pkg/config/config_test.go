@@ -27,6 +27,7 @@ import (
 	"io/fs"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -40,33 +41,33 @@ const (
 )
 
 func TestNewConfigPermissionDenied(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Emulating permission denied on Windows results in C:\tmp.yaml and no error")
-	}
-
-	cfg, err := config.NewConfig(appName, "../../../../../../../../../../../../tmp")
+	dir, err := os.UserHomeDir()
 	assert.NoError(t, err)
 
-	err = cfg.SetEnvProperty("test", "test", "test")
+	appName := uuid.New()
+	readOnly := os.FileMode(0400)
+	dir = filepath.Join(dir, ".config", appName)
+	os.MkdirAll(dir, readOnly) // owner read only
 
-	if !assert.Error(t, err) {
-		t.Errorf("Expected error, got %v", err)
-	}
+	// umask may have changed the file permissions, ensure they are correct
+	err = os.Chmod(dir, os.FileMode(readOnly))
+	assert.NoError(t, err)
+
+	_, err = config.NewConfig(appName, "test")
 
 	switch runtime.GOOS {
-
 	case "windows":
-		if !errors.Is(err, fs.ErrPermission) {
-			t.Errorf("expected error %v, got %T", fs.ErrPermission, err)
-		}
+		t.Skip("Emulating permission denied on Windows results in C:\tmp.yaml and no error")
 	case "darwin":
 		if _, ok := err.(*fs.PathError); !ok {
 			t.Errorf("expected error %T, got %T", fs.ErrPermission, err)
 		}
-	default:
+	case "linux":
 		if !errors.Is(err, os.ErrPermission) {
 			t.Errorf("expected error %v, got %T", fs.ErrPermission, err)
 		}
+	default:
+		t.Errorf("unexpected OS %s", runtime.GOOS)
 	}
 }
 

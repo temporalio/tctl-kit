@@ -61,7 +61,7 @@ func NewConfig(appName, configName string) (*Config, error) {
 	if errors.Is(err, os.ErrNotExist) {
 		cfg = &Config{}
 	} else if err != nil {
-		return nil, fmt.Errorf("unable to read config file: %w", err)
+		return nil, err
 	}
 
 	if cfg.CurrentEnv == "" {
