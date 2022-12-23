@@ -49,7 +49,7 @@ func TestNewConfigPermissionDenied(t *testing.T) {
 	dir = filepath.Join(dir, ".config", appName)
 	os.MkdirAll(dir, readOnly)
 
-	// umask may have changed the file permissions, ensure they are correct
+	// umask may have changed config folder permissions, ensure they are correct
 	err = os.Chmod(dir, os.FileMode(readOnly))
 	assert.NoError(t, err)
 
