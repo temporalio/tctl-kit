@@ -57,7 +57,7 @@ func TestNewConfigPermissionDenied(t *testing.T) {
 
 	switch runtime.GOOS {
 	case "windows":
-		t.Skip("Emulating permission denied on Windows results in C:\tmp.yaml and no error")
+		t.Skip("no permission denied error on Windows")
 	case "darwin":
 		if _, ok := err.(*fs.PathError); !ok {
 			t.Errorf("expected error %T, got %T", fs.ErrPermission, err)
