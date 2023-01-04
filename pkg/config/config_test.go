@@ -24,8 +24,11 @@ package config_test
 
 import (
 	"errors"
+	"io/fs"
 	"log"
 	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/pborman/uuid"
@@ -38,15 +41,33 @@ const (
 )
 
 func TestNewConfigPermissionDenied(t *testing.T) {
-	expectedError := errors.New("open /tmp.yaml: permission denied")
-
-	cfg, err := config.NewConfig(appName, "../../../../../../../../../../../../tmp")
+	dir, err := os.UserHomeDir()
 	assert.NoError(t, err)
 
-	err = cfg.SetEnvProperty("test", "test", "test")
+	appName := uuid.New()
+	readOnly := os.FileMode(0400)
+	dir = filepath.Join(dir, ".config", appName)
+	os.MkdirAll(dir, readOnly)
 
-	if assert.Error(t, err) {
-		assert.Equal(t, expectedError.Error(), err.Error())
+	// umask may have changed config folder permissions, ensure they are correct
+	err = os.Chmod(dir, os.FileMode(readOnly))
+	assert.NoError(t, err)
+
+	_, err = config.NewConfig(appName, "test")
+
+	switch runtime.GOOS {
+	case "windows":
+		t.Skip("no permission denied error on Windows")
+	case "darwin":
+		if _, ok := err.(*fs.PathError); !ok {
+			t.Errorf("expected error %T, got %T", fs.ErrPermission, err)
+		}
+	case "linux":
+		if !errors.Is(err, os.ErrPermission) {
+			t.Errorf("expected error %v, got %T", fs.ErrPermission, err)
+		}
+	default:
+		t.Errorf("unexpected OS %s", runtime.GOOS)
 	}
 }
 
