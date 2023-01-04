@@ -94,6 +94,22 @@ type envprop struct {
 	env, key, value string
 }
 
+func TestFilePermissionIsOwnerReadWrite(t *testing.T) {
+	cfg, teardown := setupConfig(t, "")
+	defer teardown()
+
+	// ensure the config file is created
+	err := cfg.SetEnvProperty("test", "test", "test")
+	assert.NoError(t, err)
+
+	path := cfg.Path()
+
+	fileInfo, err := os.Stat(path)
+	assert.NoError(t, err)
+
+	assert.Equal(t, os.FileMode(0600).String(), fileInfo.Mode().String())
+}
+
 func TestAlias(t *testing.T) {
 	testcases := map[string]struct {
 		input  string

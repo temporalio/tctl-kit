@@ -22,8 +22,14 @@
 
 package config
 
+import "os"
+
 const (
 	KeyAliases            string = "aliases"
 	KeyCurrentEnvironment string = "current-env"
 	KeyEnvironment        string = "env"
+)
+
+const (
+	ownerReadWrite os.FileMode = 0600
 )
