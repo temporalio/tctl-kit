@@ -35,10 +35,7 @@ import (
 const DefaultEnv = "default"
 
 type Config struct {
-	Aliases    map[string]string            `yaml:"aliases"`
-	CurrentEnv string                       `yaml:"current-env"`
-	Envs       map[string]map[string]string `yaml:"env"`
-	Version    string                       `yaml:"version"`
+	Envs map[string]map[string]string `yaml:"env"`
 
 	dir  string
 	file string
@@ -64,14 +61,6 @@ func NewConfig(appName, configName string) (*Config, error) {
 		return nil, err
 	}
 
-	if cfg.CurrentEnv == "" {
-		cfg.CurrentEnv = DefaultEnv
-	}
-
-	if cfg.Aliases == nil {
-		cfg.Aliases = map[string]string{}
-	}
-
 	if cfg.Envs == nil {
 		cfg.Envs = map[string]map[string]string{DefaultEnv: {}}
 	}
@@ -82,30 +71,6 @@ func NewConfig(appName, configName string) (*Config, error) {
 	return cfg, nil
 }
 
-func (c *Config) Alias(name string) string {
-	return c.Aliases[name]
-}
-
-func (c *Config) SetAlias(name, value string) error {
-	if err := validateKey(name); err != nil {
-		return fmt.Errorf("invalid alias name: %w", err)
-	}
-
-	c.Aliases[name] = value
-
-	return c.writeFile()
-}
-
-func (c *Config) SetCurrentEnv(name string) error {
-	if err := validateKey(name); err != nil {
-		return fmt.Errorf("invalid env name: %w", err)
-	}
-
-	c.CurrentEnv = name
-
-	return c.writeFile()
-}
-
 func (c *Config) Env(name string) map[string]string {
 	return c.Envs[name]
 }
@@ -113,10 +78,6 @@ func (c *Config) Env(name string) map[string]string {
 func (c *Config) RemoveEnv(name string) error {
 	if err := validateKey(name); err != nil {
 		return fmt.Errorf("invalid env name: %w", err)
-	}
-
-	if c.CurrentEnv == name {
-		return fmt.Errorf("unable to remove current env")
 	}
 
 	delete(c.Envs, name)
@@ -158,12 +119,6 @@ func (c *Config) RemoveEnvProperty(envName, key string) error {
 	}
 
 	return nil
-}
-
-func (c *Config) SetVersion(value string) error {
-	c.Version = value
-
-	return c.writeFile()
 }
 
 func mkfile(dir, file string) (string, error) {
