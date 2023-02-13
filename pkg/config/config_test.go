@@ -110,159 +110,6 @@ func TestFilePermissionIsOwnerReadWrite(t *testing.T) {
 	assert.Equal(t, os.FileMode(0600).String(), fileInfo.Mode().String())
 }
 
-func TestAlias(t *testing.T) {
-	testcases := map[string]struct {
-		input  string
-		expect map[string]string
-	}{
-		"reads alias by name": {
-			input: `aliases:
-    wj: workflow list --output json
-    wt: workflow list --output table`,
-			expect: map[string]string{
-				"wj":           "workflow list --output json",
-				"wt":           "workflow list --output table",
-				"doesnt-exist": "",
-				"":             "",
-			},
-		},
-	}
-
-	for name, tc := range testcases {
-		t.Run(name, func(t *testing.T) {
-			cfg, teardown := setupConfig(t, tc.input)
-			defer teardown()
-
-			for aliasName, vExpected := range tc.expect {
-				vActual := cfg.Alias(aliasName)
-				assert.Equal(t, vActual, vExpected)
-			}
-		})
-	}
-}
-
-func TestSetAlias(t *testing.T) {
-	testcases := map[string]struct {
-		input    map[string]string
-		expected string
-		err      bool
-	}{
-		"throws on empty key": {
-			input: map[string]string{
-				"": "value",
-			},
-			err: true,
-		},
-		"throws on invalid key": {
-			input: map[string]string{
-				"key!": "value",
-				"-key": "value",
-				"k.ey": "value",
-			},
-			err: true,
-		},
-		"sets on proper key and value ": {
-			input: map[string]string{
-				"wt": "workflow list --output table",
-				"wj": "workflow list --output json",
-			},
-			expected: "aliases:\n    wj: workflow list --output json\n    wt: workflow list --output table",
-		},
-	}
-
-	for name, tc := range testcases {
-		t.Run(name, func(t *testing.T) {
-			cfg, teardown := setupConfig(t, "")
-
-			if !tc.err {
-				defer teardown()
-			}
-
-			for key, value := range tc.input {
-				err := cfg.SetAlias(key, value)
-				if tc.err {
-					assert.Error(t, err)
-				} else {
-					assert.NoError(t, err)
-				}
-			}
-
-			if !tc.err {
-				assert.Contains(t, readConfig(t, cfg), tc.expected)
-			}
-		})
-	}
-}
-
-func TestCurrentEnv(t *testing.T) {
-	testcases := map[string]struct {
-		input  string
-		expect map[string]string
-	}{
-		"reads alias by name": {
-			input: `aliases:
-    wj: workflow list --output json
-    wt: workflow list --output table`,
-			expect: map[string]string{
-				"wj":           "workflow list --output json",
-				"wt":           "workflow list --output table",
-				"doesnt-exist": "",
-				"":             "",
-			},
-		},
-	}
-
-	for name, tc := range testcases {
-		t.Run(name, func(t *testing.T) {
-			cfg, teardown := setupConfig(t, tc.input)
-			defer teardown()
-
-			for aliasName, vExpected := range tc.expect {
-				vActual := cfg.Alias(aliasName)
-				assert.Equal(t, vActual, vExpected)
-			}
-		})
-	}
-}
-
-func TestSetCurrentEnv(t *testing.T) {
-	testcases := map[string]struct {
-		input    string
-		expected string
-		err      bool
-	}{
-		"throws on empty value": {
-			input: "",
-			err:   true,
-		},
-		"throws on invalid value": {
-			input: "wrong-env-name!",
-			err:   true,
-		},
-		"sets on proper value ": {
-			input:    "dev",
-			expected: "current-env: dev",
-		},
-	}
-
-	for name, tc := range testcases {
-		t.Run(name, func(t *testing.T) {
-			cfg, teardown := setupConfig(t, "")
-			if !tc.err {
-				defer teardown()
-			}
-
-			err := cfg.SetCurrentEnv(tc.input)
-			if tc.err {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Contains(t, readConfig(t, cfg), tc.expected)
-			}
-		})
-	}
-}
-
 func TestEnv(t *testing.T) {
 	testcases := map[string]struct {
 		input  string
@@ -318,14 +165,8 @@ func TestRemoveEnv(t *testing.T) {
 			inputRemove: "wrong-env-name!",
 			err:         true,
 		},
-		"throws on removing current env": {
-			inputCfg:    "current-env: dev",
-			inputRemove: "dev",
-			err:         true,
-		},
 		"removes env on proper name": {
 			inputCfg: `
-current-env: remote
 env:
   local:
     key1: value-local-1
@@ -333,9 +174,7 @@ env:
   remote:
     key1: value-remote-1`,
 			inputRemove: "local",
-			expected: `
-current-env: remote
-env:
+			expected: `env:
     remote:
         key1: value-remote-1`,
 		},

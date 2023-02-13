@@ -25,9 +25,7 @@ package config
 import "os"
 
 const (
-	KeyAliases            string = "aliases"
-	KeyCurrentEnvironment string = "current-env"
-	KeyEnvironment        string = "env"
+	KeyEnvironment string = "env"
 )
 
 const (
