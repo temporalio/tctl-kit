@@ -97,7 +97,7 @@ func PrintItems(c *cli.Context, items []interface{}, opts *PrintOptions) error {
 }
 
 // PrintIterator prints items from an iterator based on user flags or print options.
-func PrintIterator(c *cli.Context, iter iterator.Iterator, opts *PrintOptions) error {
+func PrintIterator(c *cli.Context, iter iterator.Iterator[interface{}], opts *PrintOptions) error {
 	limit := c.Int(FlagLimit)
 
 	if opts == nil {
