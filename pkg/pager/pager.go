@@ -46,7 +46,7 @@ const (
 func NewPager(c *cli.Context, pager string) (io.Writer, func()) {
 	noPager := c.Bool(FlagNoPager)
 	if noPager || pager == "" || pager == string(Stdout) || !isatty.IsTerminal(os.Stdout.Fd()) {
-		return os.Stdout, func() {}
+		return c.App.Writer, func() {}
 	}
 
 	exe, err := lookupPager(pager)
