@@ -51,6 +51,10 @@ func TestPrintTable_Stdout(t *testing.T) {
 
 	w, _ = pager.NewPager(ctx, "stdout")
 	assert.Equal(t, w, os.Stdout)
+
+	ctx.App.Writer = os.Stderr
+	w, _ = pager.NewPager(ctx, "")
+	assert.Equal(t, w, os.Stderr)
 }
 
 func TestPrintTable_StdoutFallback(t *testing.T) {
