@@ -46,7 +46,12 @@ func TestNewConfigPermissionDenied(t *testing.T) {
 
 	appName := uuid.New()
 	readOnly := os.FileMode(0400)
-	dir = filepath.Join(dir, ".config", appName)
+	defaultPermission := os.FileMode(0755)
+
+	dir = filepath.Join(dir, ".config")
+	os.MkdirAll(dir, defaultPermission)
+
+	dir = filepath.Join(dir, appName)
 	os.MkdirAll(dir, readOnly)
 
 	// umask may have changed config folder permissions, ensure they are correct
