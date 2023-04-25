@@ -46,7 +46,12 @@ func TestNewConfigPermissionDenied(t *testing.T) {
 
 	appName := uuid.New()
 	readOnly := os.FileMode(0400)
-	dir = filepath.Join(dir, ".config", appName)
+	defaultPermission := os.FileMode(0755)
+
+	dir = filepath.Join(dir, ".config")
+	os.MkdirAll(dir, defaultPermission)
+
+	dir = filepath.Join(dir, appName)
 	os.MkdirAll(dir, readOnly)
 
 	// umask may have changed config folder permissions, ensure they are correct
@@ -69,6 +74,17 @@ func TestNewConfigPermissionDenied(t *testing.T) {
 	default:
 		t.Errorf("unexpected OS %s", runtime.GOOS)
 	}
+}
+
+func TestNewConfigWithoutHomeEnv(t *testing.T) {
+	home := os.Getenv("HOME")
+	os.Unsetenv("HOME")
+	defer os.Setenv("HOME", home)
+
+	appName := uuid.New()
+
+	_, err := config.NewConfig(appName, "test")
+	assert.NoError(t, err)
 }
 
 func TestCreatesConfigFileLazily(t *testing.T) {

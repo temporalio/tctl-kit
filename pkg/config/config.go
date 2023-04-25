@@ -221,8 +221,10 @@ func validateKey(key string) error {
 
 func configPath(appName, configName string) (string, string, error) {
 	dir, err := os.UserHomeDir()
+
+	// If the HOME env var is not set (can happen if we’re called by a process other than a shell), we still try to construct a writable path
 	if err != nil {
-		return "", "", err
+		dir = os.TempDir()
 	}
 
 	dir = filepath.Join(dir, ".config", appName)
