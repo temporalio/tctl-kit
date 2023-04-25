@@ -76,6 +76,17 @@ func TestNewConfigPermissionDenied(t *testing.T) {
 	}
 }
 
+func TestNewConfigWithoutHomeEnv(t *testing.T) {
+	home := os.Getenv("HOME")
+	os.Unsetenv("HOME")
+	defer os.Setenv("HOME", home)
+
+	appName := uuid.New()
+
+	_, err := config.NewConfig(appName, "test")
+	assert.NoError(t, err)
+}
+
 func TestCreatesConfigFileLazily(t *testing.T) {
 	cfg, teardown := setupConfig(t, "")
 	defer teardown()
